@@ -1,0 +1,6 @@
+numpy
+PyMySQL
+lxml
+retry
+requests
+pytz

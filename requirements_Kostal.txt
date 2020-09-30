@@ -1,0 +1,5 @@
+numpy
+PyMySQL
+retry
+pytz
+urllib3
