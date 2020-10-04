@@ -7,15 +7,15 @@ from base_monitoring.monitoring import Monitoring
 from USV.USV import USV
 import configparser
 
+monitor_name = 'USV'
 
 if __name__ == "__main__":
 #     logging.basicConfig(level='DEBUG', format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
 # #    logging.basicConfig(filename='logfile_USV.log', level='DEBUG', format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
 #     logger = logging.getLogger(__name__)
-    set_logger('logfile_USV.log')
+    set_logger('logfile_%s.log' % monitor_name)
     logger = logging.getLogger(__name__)
     logger.info('First Log')
-    monitor_name = 'USV'
     configuration = configparser.ConfigParser()
     configuration.sections()
     configuration.read('config.ini')
