@@ -19,7 +19,7 @@ class Monitoring:
         
     def start(self):
         counter = 0
-        logger.info(counter)
+        logger.debug(counter)
         # logger.info(datetime.now().isoformat())
         waiting = (self.writerate - (datetime.now().timestamp() % self.writerate)) + self.refreshrate - 2
         if waiting > self.writerate:
@@ -46,10 +46,13 @@ class Monitoring:
                         logging_list.append(self.data_parser.collect_data())
                     except Exception:
                         logger.exception('No Data from parser')
-                    logger.info('\t parses_data: %s' % self.data_parser.parsed_data['TIMESTAMP'])
+                    logger.debug('\t parsed_data: %s' % self.data_parser.parsed_data['TIMESTAMP'])
     
             if len(logging_list) > 0:
-                logging_data = self.average_of_dicts(logging_list, self.data_parser.average_ignores, 6)
+                if len(logging_list) > 1:
+                    logging_data = self.average_of_dicts(logging_list, self.data_parser.average_ignores, 6)
+                else:
+                    logging_data = logging_list[0]
                 if not data_caching:
                     mysql_status = self.mysql_connection.write_dict_data(logging_data)
                     if not mysql_status:
@@ -68,8 +71,8 @@ class Monitoring:
                     self.mysql_connection.connect()
                     for logging_data in data_cache:
                         mysql_status = self.mysql_connection.write_dict_data(logging_data)
-                        if mysql_status:
-                            logger.info('\t\tMYSQL: %s' % logging_data['TIMESTAMP'])
+                        if not mysql_status:
+                            logger.warning('\t\tMYSQL: %s' % logging_data['TIMESTAMP'])
                         mysql_status_list.append(mysql_status)
                     if all(mysql_status_list):
                         logger.info("\tcaching disabled - Data Cache written to mysql")
@@ -79,7 +82,7 @@ class Monitoring:
                         logger.error("Data Cache not written to mysql")
                         raise RuntimeError
                     else:
-                        logger.info("Data Cache partially written to mysql")
+                        logger.warning("Data Cache partially written to mysql")
                         raise RuntimeError
                 else:
                     data_cache.append(logging_data)
