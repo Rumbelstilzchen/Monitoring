@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from base_logging.base_logging import set_logger
 from base_MYSQL.mysql import db_write
-from base_monitoring.monitoring import Monitoring
 from BYD.BYD import BYD
+from base_monitoring.monitoring import Monitoring
 import configparser
-logging.basicConfig(filename='logfile_BYD.log', level=logging.INFO,
-                    format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
 
 monitor_name = 'BYD'
 
 if __name__ == "__main__":
+    set_logger('logfile_%s.log' % monitor_name)
+    logger = logging.getLogger(__name__)
+    logger.info('First Log')
     configuration = configparser.ConfigParser()
     configuration.sections()
     configuration.read('config.ini')

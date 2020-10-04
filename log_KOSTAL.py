@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from base_logging.base_logging import set_logger
 from base_MYSQL.mysql import db_write
 from Kostal.Kostal import Kostal
 from base_monitoring.monitoring import Monitoring
 import configparser
-logging.basicConfig(filename='logfile_kostal.log', level=logging.INFO,
-                    format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
+# logging.basicConfig(filename='logfile_kostal.log', level=logging.INFO,
+#                     format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
 
 monitor_name = 'Kostal'
 
 if __name__ == "__main__":
+    set_logger('logfile_%s.log' % monitor_name)
+    logger = logging.getLogger(__name__)
+    logger.info('First Log')
     configuration = configparser.ConfigParser()
     configuration.sections()
     configuration.read('config.ini')
@@ -21,7 +25,6 @@ if __name__ == "__main__":
     if monitor_name in configuration.sections():
         try:
             Kostal = Kostal(configuration)
-            parse_kostal = True
         except Exception as e:
             logging.exception('on load Kostal class')
             raise e
