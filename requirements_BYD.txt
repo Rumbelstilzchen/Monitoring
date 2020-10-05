@@ -1,5 +1,6 @@
 numpy
-PyMySQL
+# PyMySQL
+mysql-connector-python
 lxml
 retry
 requests
