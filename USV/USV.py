@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import telnetlib
-import urllib.request
+# import telnetlib
+# import urllib.request
 import pytz
 from datetime import datetime
 from nut2 import PyNUTClient
-from retry import retry
+# from retry import retry
 from collections import OrderedDict
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,8 @@ class USV:
         self.timestamp = None
         self.http = None
         self.parsed_data = OrderedDict()
-        self.tz = pytz.timezone('Europe/Berlin')
+        self.time_zone = 'Europe/Berlin'
+        self.tz = pytz.timezone(self.time_zone)
         self.nut_name = "ups"
 
         self.nut = PyNUTClient(host="192.168.2.55", debug=False, connect=False)

@@ -27,7 +27,8 @@ class DWD:
         self.configuration = config
         self.timestamp = None
         self.parsed_data = OrderedDict()
-        self.tz = pytz.timezone('Europe/Berlin')
+        self.time_zone = 'Europe/Berlin'
+        self.tz = pytz.timezone(self.time_zone)
         self.names_space = {'dwd': 'https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd',
                    'gx': 'http://www.google.com/kml/ext/2.2',
                    'kml': 'http://www.opengis.net/kml/2.2', 'atom': 'http://www.w3.org/2005/Atom',

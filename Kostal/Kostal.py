@@ -22,7 +22,8 @@ class Kostal:
         self.timestamp = None
         self.http = None
         self.parsed_data = OrderedDict()
-        self.tz = pytz.timezone('Europe/Berlin')
+        self.time_zone = 'Europe/Berlin'
+        self.tz = pytz.timezone(self.time_zone)
         self.dict_dxsID = [
             {33556226: 'BatVoltage',
              33556238: 'BatCurrent',

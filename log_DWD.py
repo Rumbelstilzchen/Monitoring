@@ -37,6 +37,7 @@ if __name__ == "__main__":
             'mysql_pw': configuration[monitor_name]['mysql_pw'],
             'mysql_DB': configuration[monitor_name]['mysql_DB'],
             'mysql_table': configuration[monitor_name]['mysql_tablename'],
+            'time_zone': DWD.time_zone,
             'StatementType': 'UPDATE'
         }
         MYsqlConnection = db_write(MYSQL_config)

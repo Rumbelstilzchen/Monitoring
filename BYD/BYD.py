@@ -22,7 +22,8 @@ class BYD:
     def __init__(self, config):
         self.configuration = config
         self.timestamp = None
-        self.tz = pytz.timezone('Europe/Berlin')
+        self.time_zone = 'Europe/Berlin'
+        self.tz = pytz.timezone(self.time_zone)
         self.parsed_data = OrderedDict()
         self.site_struct = {
             'StatisticInformation': {'Laden_kWh': ['Total Charge Energy:', float],

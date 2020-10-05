@@ -34,7 +34,8 @@ if __name__ == "__main__":
             'mysql_username': configuration[monitor_name]['mysql_username'],
             'mysql_pw': configuration[monitor_name]['mysql_pw'],
             'mysql_DB': configuration[monitor_name]['mysql_DB'],
-            'mysql_table': configuration[monitor_name]['mysql_tablename']
+            'mysql_table': configuration[monitor_name]['mysql_tablename'],
+            'time_zone': BYD.time_zone,
         }
         MYsqlConnection = db_write(MYSQL_config)
     except Exception as e:
