@@ -18,6 +18,7 @@ class Monitoring:
         self.data_parser = data_parser
         
     def start(self):
+        max_number_cached_entries = 6
         counter = 0
         logger.debug(counter)
         # logger.info(datetime.now().isoformat())
@@ -54,6 +55,8 @@ class Monitoring:
                 else:
                     logging_data = logging_list[0]
                 if not data_caching:
+                    if self.writerate >= 300:
+                        self.mysql_connection.connect()
                     mysql_status = self.mysql_connection.write_dict_data(logging_data)
                     if not mysql_status:
                         data_caching = True
@@ -62,18 +65,22 @@ class Monitoring:
                         logger.info("\tcaching enabled")
                         logger.info("\t\t writing to cache")
                         self.mysql_connection.close()
+                    elif self.writerate >= 300:
+                        self.mysql_connection.close()
                     # else:
                     #     logger.info('\tMYSQL: %s' % logging_data['TIMESTAMP'])
-                elif mysql_status_counter == 5:
+                elif mysql_status_counter == max_number_cached_entries:
                     data_cache.append(logging_data)
                     logger.info("\t\t writing to cache")
                     mysql_status_list = []
-                    self.mysql_connection.connect()
+                    self.mysql_connection.connect(info_output=True)
                     for logging_data in data_cache:
                         mysql_status = self.mysql_connection.write_dict_data(logging_data)
                         if not mysql_status:
                             logger.warning('\t\tMYSQL: %s' % logging_data['TIMESTAMP'])
                         mysql_status_list.append(mysql_status)
+                    if self.writerate >= 300:
+                        self.mysql_connection.close()
                     if all(mysql_status_list):
                         logger.info("\tcaching disabled - Data Cache written to mysql")
                         data_caching = False
