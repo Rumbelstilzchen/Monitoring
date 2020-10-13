@@ -13,7 +13,7 @@ def set_logger(filename):
 
     # # create console handler with a higher log level
     # handler = logging.StreamHandler()
-    # handler.setLevel(logging.INFO)
+    # handler.setLevel(logging.DEBUG)
     # handler.setFormatter(formatter)
     # # add the handler to the logger
     # logging.root.addHandler(handler)
