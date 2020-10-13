@@ -17,12 +17,12 @@ class db_write:
             self.statement_type = self.config['StatementType']
         else:
             self.statement_type = 'Insert'
-        self.connect()
+        self.connect(info_output=True)
 
     def __del__(self):
         self.close()
 
-    def connect(self):
+    def connect(self, info_output=False):
         try:
             self.connection = mysql.connect(host=self.config['mysql_host'],
                                             port=self.config['mysql_port'],
@@ -37,11 +37,13 @@ class db_write:
 
             if self.connection.is_connected():
                 db_Info = self.connection.get_server_info()
-                logger.info("Connected to MySQL Server version %s", db_Info)
+                if info_output:
+                    logger.info("Connected to MySQL Server version %s", db_Info)
                 with self.connection.cursor() as cursor:
                     cursor.execute("select database();")
                     record = cursor.fetchone()
-                    logger.info("You're connected to database: %s", record)
+                    if info_output:
+                        logger.info("You're connected to database: %s", record)
         except Exception as e:
             logger.exception('Mysql cannot connect')
             raise e
@@ -52,12 +54,33 @@ class db_write:
         except Exception:
             logger.exception('Mysql already closed')
 
+    def check_connection(self):
+        must_connect = False
+        return_status = False
+        try:
+            self.connection.ping(reconnect=False, attempts=2, delay=0.5)
+            return_status = True
+        except Exception:
+            must_connect = True
+            logger.exception("Not Connected to MySQL reconnect didn't work - trying to reconnect")
+        if must_connect:		# reconnect your cursor as you did in __init__ or wherever
+            try:
+                self.connect()
+                return_status = True
+            except Exception:
+                return_status = False
+        return return_status
+
+
     def write_dict_data(self, dictionary):
         myDict = OrderedDict(dictionary)
-        if isinstance(myDict['TIMESTAMP'], list):
-            success_state = self.write_dict_data_multiple(myDict)
+        if self.check_connection():
+            if isinstance(myDict['TIMESTAMP'], list):
+                success_state = self.write_dict_data_multiple(myDict)
+            else:
+                success_state = self.write_dict_data_single(myDict)
         else:
-            success_state = self.write_dict_data_single(myDict)
+            success_state = False
         return success_state
 
     def write_dict_data_multiple(self, myDict):
@@ -100,9 +123,25 @@ class db_write:
         return success
 
     def write_dict_data_single(self, myDict):
-        # if self.statement_type.upper() == 'UPDATE':
-        #     # delete old entries
-        #     pass
+        if self.statement_type.upper() == 'UPDATE':
+            if 'time_sec' in myDict.keys():
+                time_column = 'time_sec'
+            elif 'TIMESTAMP' in myDict.keys():
+                time_column = 'TIMESTAMP'
+            else:
+                logger.error(
+                    'Cannot Update Entries - deleteing is not possible as neither time_sec nor TIMESTAMP is found')
+                raise NotImplementedError
+            try:
+                with self.connection.cursor() as cursor:
+                    sql_delete = 'DELETE FROM %s WHERE %s = %s' % (self.config['mysql_table'], time_column, myDict[time_column])
+                    cursor.execute(sql_delete)
+                    self.connection.commit()
+                logger.debug("MYSQL: deleting old entries")
+                success = True
+            except Exception:
+                success = False
+                logger.exception('MYSQLERROR')
         try:
             with self.connection.cursor() as cursor:
                 placeholders = ', '.join(['%s'] * len(myDict))
