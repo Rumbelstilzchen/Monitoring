@@ -6,8 +6,6 @@ from base_MYSQL.mysql import db_write
 from DWD.DWD import DWD
 from base_monitoring.monitoring import Monitoring
 import configparser
-# logging.basicConfig(filename='logfile_kostal.log', level=logging.INFO,
-#                     format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
 
 monitor_name = 'DWD'
 
@@ -45,6 +43,6 @@ if __name__ == "__main__":
         logging.exception('on load MYSQL class')
         raise e
 
-    Monitoring = Monitoring(refreshrate, writerate, DWD, MYsqlConnection)
+    Monitoring = Monitoring(refreshrate, writerate, DWD, MYsqlConnection, configuration['Mail'])
 
     Monitoring.start()

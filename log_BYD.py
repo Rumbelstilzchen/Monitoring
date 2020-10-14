@@ -42,6 +42,6 @@ if __name__ == "__main__":
         logging.exception('on load MYSQL class')
         raise e
 
-    Monitoring = Monitoring(refreshrate, writerate, BYD, MYsqlConnection)
+    Monitoring = Monitoring(refreshrate, writerate, BYD, MYsqlConnection, configuration['Mail'])
 
     Monitoring.start()

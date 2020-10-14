@@ -6,8 +6,6 @@ from base_MYSQL.mysql import db_write
 from Kostal.Kostal import Kostal
 from base_monitoring.monitoring import Monitoring
 import configparser
-# logging.basicConfig(filename='logfile_kostal.log', level=logging.INFO,
-#                     format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
 
 monitor_name = 'Kostal'
 
@@ -26,7 +24,7 @@ if __name__ == "__main__":
         try:
             Kostal = Kostal(configuration)
         except Exception as e:
-            logging.exception('on load Kostal class')
+            logger.exception('on load %s class', monitor_name)
             raise e
 
     try:
@@ -41,9 +39,12 @@ if __name__ == "__main__":
         }
         MYsqlConnection = db_write(MYSQL_config)
     except Exception as e:
-        logging.exception('on load MYSQL class')
+        logger.exception('on load MYSQL class')
         raise e
 
-    Monitoring = Monitoring(refreshrate, writerate, Kostal, MYsqlConnection)
+    if 'Mail' in configuration.sections():
+        mail_config = configuration['Mail']
+
+    Monitoring = Monitoring(refreshrate, writerate, Kostal, MYsqlConnection, mail_config)
 
     Monitoring.start()

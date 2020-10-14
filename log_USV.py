@@ -3,16 +3,13 @@
 import logging
 from base_logging.base_logging import set_logger
 from base_MYSQL.mysql import db_write
-from base_monitoring.monitoring import Monitoring
 from USV.USV import USV
+from base_monitoring.monitoring import Monitoring
 import configparser
 
 monitor_name = 'USV'
 
 if __name__ == "__main__":
-#     logging.basicConfig(level='DEBUG', format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
-# #    logging.basicConfig(filename='logfile_USV.log', level='DEBUG', format='%(asctime)s %(levelname)-8s : %(message)s', datefmt='%Y%m%d-%H%M%S')
-#     logger = logging.getLogger(__name__)
     set_logger('logfile_%s.log' % monitor_name)
     logger = logging.getLogger(__name__)
     logger.info('First Log')
@@ -45,6 +42,9 @@ if __name__ == "__main__":
         logger.exception('on load MYSQL class')
         raise e
 
-    Monitoring = Monitoring(refreshrate, writerate, USV, MYsqlConnection)
+    if 'Mail' in configuration.sections():
+        mail_config = configuration['Mail']
+
+    Monitoring = Monitoring(refreshrate, writerate, USV, MYsqlConnection, mail_config)
 
     Monitoring.start()
