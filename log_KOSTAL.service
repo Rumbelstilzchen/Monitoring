@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/pi/PythonProgs/monitoring/venv3p7/bin/python3 log_KOSTAL.py
+ExecStart=/home/pi/PythonProgs/monitoring/venv3p7/bin/python3 log_template.py Kostal
 WorkingDirectory=/home/pi/PythonProgs/monitoring
 StandardOutput=inherit
 StandardError=inherit

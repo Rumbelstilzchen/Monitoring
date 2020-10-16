@@ -3,9 +3,24 @@
 import logging
 from base_logging.base_logging import set_logger
 from base_MYSQL.mysql import db_write
-from BYD.BYD import BYD as parser
 from base_monitoring.monitoring import Monitoring
 import configparser
+import sys
+import importlib
+
+# Import monitoring module by cmdline argument
+if len(sys.argv) <= 1:
+    exit("Too less arguments calling script")
+else:
+    module_name = sys.argv[1]
+parser = getattr(importlib.import_module("%s.%s" % (module_name, module_name)), module_name)
+# parser = getattr(__import__("%s.%s" % (module_name,module_name), fromlist=[module_name]), module_name)
+
+# For debugging purposes this line below does the same thing but static
+# from BYD.BYD import BYD as parser
+# from Kostal.Kostal import Kostal as parser
+# from DWD.DWD import DWD as parser
+# from USV.USV import USV as parser
 
 
 if __name__ == "__main__":
@@ -36,6 +51,8 @@ if __name__ == "__main__":
             'mysql_table': configuration[parser.name]['mysql_tablename'],
             'time_zone': parser_init.time_zone,
         }
+        if 'mysql_type' in configuration[parser.name].keys():
+            MYSQL_config['StatementType'] = configuration[parser.name]['mysql_type']
         MYsqlConnection = db_write(MYSQL_config)
     except Exception as e:
         logger.exception('on load MYSQL class')
