@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/pi/PythonProgs/monitoring/venv3p7/bin/python3 log_template.py USV
+ExecStart=/home/pi/PythonProgs/monitoring/venv3p7/bin/python3 monitoring_template.py USV
 WorkingDirectory=/home/pi/PythonProgs/monitoring
 StandardOutput=inherit
 StandardError=inherit
