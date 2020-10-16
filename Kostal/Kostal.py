@@ -8,6 +8,8 @@ from collections import OrderedDict
 import logging
 import urllib3
 
+logger = logging.getLogger(__name__)
+
 
 def check_values_empty(dict_data):
     for value in dict_data.values():
@@ -17,12 +19,15 @@ def check_values_empty(dict_data):
 
 
 class Kostal:
+    name = 'Kostal'
+
     def __init__(self, config):
         self.configuration = config
         self.timestamp = None
         self.http = None
         self.parsed_data = OrderedDict()
-        self.time_zone = 'Europe/Berlin'
+        # self.time_zone = 'Europe/Berlin'
+        self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
         self.dict_dxsID = [
             {33556226: 'BatVoltage',
@@ -123,7 +128,7 @@ class Kostal:
             #     url_response = json.loads(json_url.read().decode('utf8'))
             #     data.update(self.reformat_data(url_response['dxsEntries'], dxs_set))
             if check_values_empty(data):
-                logging.error('empty strings were found')
+                logger.error('empty strings were found')
                 raise ValueError('empty strings were found')
         self.parsed_data = data
 
@@ -155,10 +160,13 @@ class Kostal:
         if self.parsed_data['AktHomeConsumptionSolar'] < 0 or self.parsed_data['AktHomeConsumptionBat'] < 0 or \
                 self.parsed_data['AktHomeConsumption'] < 0 or self.parsed_data['AktHomeConsumptionGrid'] < 0:
             if self.parsed_data['AktHomeConsumptionSolar'] < 0:
+                logger.info('AktHomeConsumptionSolar is negative')
                 self.parsed_data['AktHomeConsumptionSolar'] = 0
             if self.parsed_data['AktHomeConsumptionBat'] < 0:
+                logger.info('AktHomeConsumptionBat is negative')
                 self.parsed_data['AktHomeConsumptionBat'] = 0
             if self.parsed_data['AktHomeConsumptionGrid'] < 0:
+                logger.info('AktHomeConsumptionGrid is negative')
                 self.parsed_data['AktHomeConsumptionGrid'] = 0
 
             self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumptionSolar'] + \
@@ -169,6 +177,7 @@ class Kostal:
         if self.parsed_data['BatCurrentDir'] == 0 and \
                 self.parsed_data['BatPowerLaden'] > self.parsed_data['AktHomeConsumptionGrid'] and \
                 self.parsed_data['dcPowerPV'] < 1:
+            logger.info('Bat is loaded bey Grid - assigning loading to AktHomeConsumptionGrid/AktHomeConsumption')
             self.parsed_data['AktHomeConsumptionGrid'] = self.parsed_data['AktHomeConsumptionGrid'] + \
                                                          self.parsed_data['BatPowerLaden']
             self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumption'] + self.parsed_data[
@@ -195,4 +204,4 @@ class Kostal:
 
 
 if __name__ == "__main__":
-    logging.error('logger file needs to be run directly')
+    logger.error('logger file needs to be run directly')

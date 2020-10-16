@@ -23,11 +23,14 @@ def check_values_empty(dict_data):
 
 
 class DWD:
+    name = 'DWD'
+
     def __init__(self, config):
         self.configuration = config
         self.timestamp = None
         self.parsed_data = OrderedDict()
-        self.time_zone = 'Europe/Berlin'
+        # self.time_zone = 'Europe/Berlin'
+        self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
         self.names_space = {'dwd': 'https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd',
                    'gx': 'http://www.google.com/kml/ext/2.2',

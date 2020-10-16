@@ -8,9 +8,13 @@ from datetime import datetime
 from nut2 import PyNUTClient
 # from retry import retry
 from collections import OrderedDict
+
 logger = logging.getLogger(__name__)
 
+
 class USV:
+    name = 'USV'
+
     def __init__(self, config=None):
         self.configuration = config
         self.timestamp = None

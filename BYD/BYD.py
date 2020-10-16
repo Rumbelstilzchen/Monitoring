@@ -10,6 +10,8 @@ from retry import retry
 from collections import OrderedDict
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 def check_values_empty(dict_data):
     for value in dict_data.values():
@@ -19,10 +21,13 @@ def check_values_empty(dict_data):
 
 
 class BYD:
+    name = 'BYD'
+
     def __init__(self, config):
         self.configuration = config
         self.timestamp = None
-        self.time_zone = 'Europe/Berlin'
+        # self.time_zone = 'Europe/Berlin'
+        self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
         self.parsed_data = OrderedDict()
         self.site_struct = {
@@ -64,12 +69,13 @@ class BYD:
     @retry(tries=2, delay=0)
     def load_data_fromurl(self):
         data = OrderedDict()
-        mySession = requests.Session()
-        authentication = HTTPBasicAuth(self.configuration['BYD']['username'], self.configuration['BYD']['password'])
+        my_session = requests.Session()
+        authentication = HTTPBasicAuth(self.configuration[self.name]['username'],
+                                       self.configuration[self.name]['password'])
         self.timestamp = datetime.now(self.tz)
         for key, value in self.site_struct.items():
-            url = "http://" + self.configuration['BYD']['IPAdresse'] + "/asp/" + key + ".asp"
-            r4 = mySession.get(url, auth=authentication)
+            url = "http://" + self.configuration[self.name]['IPAdresse'] + "/asp/" + key + ".asp"
+            r4 = my_session.get(url, auth=authentication)
             if r4.status_code == 200:
                 page = r4.text
                 page = page.replace('><input readonly="readonly" type="text" value=', '>')
@@ -85,7 +91,7 @@ class BYD:
                     data[entry] = searchstring[1](re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", temp)[0])
                     # data[entry] = temp.split()[0]
             if check_values_empty(data):
-                logging.error('empty strings were found')
+                logger.error('empty strings were found')
                 raise ValueError('empty strings were found')
         self.parsed_data = data
 
@@ -96,4 +102,4 @@ class BYD:
 
 
 if __name__ == "__main__":
-    logging.error('logger file needs to be run directly')
+    logger.error('logger file needs to be run directly')
