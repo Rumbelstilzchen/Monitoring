@@ -12,6 +12,18 @@ pip3 install requirements_USV.txt
 ### Edit config.ini
 The config.ini needs to be adopted so that it fits to your environment/Passwords/IPs
 
+### direct Usage
+Each monitoring can bee called - e.g. for testing - directly:
+```bash
+[python path]/python monitoring_template.py [module_name]
+```
+module_name can currently be any of:
+  * BYD
+  * DWD
+  * DWD_SIM
+  * Kostal
+  * USV
+
 ### Enabling services
 For each monitoring device the serivce needs to be enabled.
 Make sure that the path within the *.service file has been adopted to your environment.
@@ -24,8 +36,10 @@ sudo systemctl daemon-reload
 
 ### Disclaimer
 **Warning:**
-Please note that you are responsible to operate this program and comply with regulations imposed on you by other Website providers (such as the DWD website being polled)
+Please note that you are responsible to operate this program and comply with regulations imposed on you by other
+Website providers (such as e.g. the DWD website being polled)
 
-Therefore, the author does not provide any guarantee or warranty concerning to correctness, functionality or performance and does not accept any liability for damage caused by this module, examples or mentioned information.
+Therefore, the author does not provide any guarantee or warranty concerning to correctness, functionality or
+performance and does not accept any liability for damage caused by this module, examples or mentioned information.
 
    **Thus, use it on your own risk!**
