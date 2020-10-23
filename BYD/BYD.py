@@ -88,7 +88,9 @@ class BYD:
                 for entry, searchstring in value.items():
                     # temp2 = soup_ele.find("td", text=searchstring).find_next_sibling("td").text
                     temp = xml_doc.xpath('string(//td[.="'+searchstring[0]+'"]/following-sibling::*[1][name()="td"])')
-                    data[entry] = searchstring[1](re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", temp)[0])
+                    data[entry] = searchstring[1](
+                        re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", temp)[0]
+                    )
                     # data[entry] = temp.split()[0]
             if check_values_empty(data):
                 logger.error('empty strings were found')
