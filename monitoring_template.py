@@ -10,16 +10,17 @@ import importlib
 
 # Import monitoring module by cmdline argument
 if len(sys.argv) <= 1:
-    exit("Too less arguments calling script")
+    raise RuntimeError("Too less arguments calling script")
 else:
     module_name = sys.argv[1]
 parser = getattr(importlib.import_module("%s.%s" % (module_name, module_name)), module_name)
 # parser = getattr(__import__("%s.%s" % (module_name,module_name), fromlist=[module_name]), module_name)
 
-# For debugging purposes this line below does the same thing but static
+# For debugging purposes any of the lines below does the same thing but static
 # from BYD.BYD import BYD as parser
 # from Kostal.Kostal import Kostal as parser
 # from DWD.DWD import DWD as parser
+# from DWD_SIM.DWD_SIM import DWD_SIM as parser
 # from USV.USV import USV as parser
 
 
@@ -40,6 +41,9 @@ if __name__ == "__main__":
         except Exception as e:
             logging.exception('on load %s class', parser.name)
             raise e
+    else:
+        logger.error('section %s for monitoring module not found in config.ini', parser.name)
+        raise RuntimeError('section %s for monitoring module not found in config.ini' % parser.name)
 
     try:
         MYSQL_config = {
