@@ -33,16 +33,16 @@ class DWD:
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
         self.names_space = {'dwd': 'https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd',
-                   'gx': 'http://www.google.com/kml/ext/2.2',
-                   'kml': 'http://www.opengis.net/kml/2.2', 'atom': 'http://www.w3.org/2005/Atom',
-                   'xal': 'urn:oasis:names:tc:ciq:xsdschema:xAL:2.0'}
-        self.station_IDs = self.configuration['DWD']['DWD_station_IDs'].split(',')
-        self.station_link = self.configuration['DWD']['DWD_link']
+                            'gx': 'http://www.google.com/kml/ext/2.2',
+                            'kml': 'http://www.opengis.net/kml/2.2', 'atom': 'http://www.w3.org/2005/Atom',
+                            'xal': 'urn:oasis:names:tc:ciq:xsdschema:xAL:2.0'}
+        self.station_IDs = self.configuration[self.name]['DWD_station_IDs'].split(',')
+        self.station_link = self.configuration[self.name]['DWD_link']
         self.dict_IDs = {
             # 'TN': 'Tn',  # Minimum temperature - within the last 12 hours
             # 'TX': 'Tx',      # Maximum temperature - within the last 12 hours
             'TTT': ['Temperature', 1, -273.15],  # Temperature 2m above surface
-            'SunD1': ['SS1' , 1, 0],
+            'SunD1': ['SS1', 1, 0],
             'Nh': ['Bewoelkung_H', 1, 0],  # High cloud cover (>7 km)
             'Nm': ['Bewoelkung_M', 1, 0],  # Midlevel cloud cover (2-7 km) (%)
             'Nl': ['Bewoelkung_L', 1, 0],  # Low cloud cover (lower than 2 km) (%)
@@ -54,14 +54,13 @@ class DWD:
             # 'FXh25': 'fx6',   # Probability of wind gusts >= 25kn within the last 12 hours (% 0..100)
             # 'FXh40': 'fx9',   # Probability of wind gusts >= 40kn within the last 12 hours
             # 'FXh55': 'fx11',  # Probability of wind gusts >= 55kn within the last 12 hours
-            'PPPP': ['Luftdruck', 0.01, 0], # Surface pressure, reduced (Pa)
+            'PPPP': ['Luftdruck', 0.01, 0],  # Surface pressure, reduced (Pa)
             # 'N': 'N',
             'Td': ['Td', 1, -273.15],
             # 'SS24': 'SS24',
             'Rad1h': ['Rad1h', 1, 0],  # kJ/m2
         }
         # self.collect_data()
-
 
     @staticmethod
     def getHumidity(T, TD):
@@ -79,16 +78,16 @@ class DWD:
 
     def add_timesec(self):
         self.parsed_data['time_sec'] = [int(x.timestamp()) for x in self.parsed_data['TIMESTAMP']]
-        self.parsed_data['TIMESTAMP'] = [datetime.fromtimestamp(x, self.tz).strftime('%Y-%m-%d %H:%M:%S') for x in self.parsed_data['time_sec']]
+        self.parsed_data['TIMESTAMP'] = \
+            [datetime.fromtimestamp(x, self.tz).strftime('%Y-%m-%d %H:%M:%S') for x in self.parsed_data['time_sec']]
 
     def parse_data(self):
-        self.parsed_data = {}
-        self.parsed_data['TIMESTAMP'] = []
+        self.parsed_data = {'TIMESTAMP': [],
+                            'Humidity': []}
         for item in self.dict_IDs.values():
             self.parsed_data[item[0]] = []
-        self.parsed_data['Humidity'] = []
         for station_ID in self.station_IDs:
-            link = self.configuration['DWD']['DWD_link'].replace('[station_ID]', station_ID)
+            link = self.configuration[self.name]['DWD_link'].replace('[station_ID]', station_ID)
             self.load_data(link)
 
     def average_parsed_data(self):
@@ -104,7 +103,7 @@ class DWD:
         temp_data['TIMESTAMP'] = self.parsed_data['TIMESTAMP'][
             next(i for i, v in enumerate(item_selector_for_identical_times) if v)]
         for item_key in self.parsed_data.keys():
-            if item_key is not 'TIMESTAMP':
+            if item_key != 'TIMESTAMP':
                 value = np.mean(np.array(self.parsed_data[item_key], dtype=np.float)[item_selector_for_identical_times],
                                 axis=0)
                 temp_data[item_key] = getattr(value, "tolist", lambda: value)()
@@ -135,34 +134,22 @@ class DWD:
         for child in timestamps:
             timevalue.append(pytz.timezone('UTC').localize(datetime.strptime(child.text, '%Y-%m-%dT%H:%M:%S.%fZ')))
 
-        output_data = OrderedDict()
-
         self.parsed_data['TIMESTAMP'].append(timevalue)
         for elem in tree.findall('./kml:Document/kml:Placemark', self.names_space):  # Position us at the Placemark
-            # print ("SUCERJH ", sucher)
-            # print ("Elemente ", elem.tag, elem.attrib, elem.text)
-            mylocation = elem.find('kml:name', self.names_space).text  # Look for the station Number
-
-            # Here we pull the required data out of the xml file
-            # if (self.mylocation == self.mystation):
-            # print ("meine location", self.mylocation)
             myforecastdata = elem.find('kml:ExtendedData', self.names_space)
-            for elem in myforecastdata:
+            for elem_2 in myforecastdata:
                 # We may get the following strings and are only interested in the right hand quoted property name WPcd1:
                 # {'{https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd}elementName': 'WPcd1'}
-                trash = str(elem.attrib)
+                trash = str(elem_2.attrib)
                 trash1, mosmix_element = trash.split("': '")
                 mosmix_element, trash = mosmix_element.split("'}")
-                # -------------------------------------------------------------
-                # Currently looking at the following key Data:
-                # Looking for the following mosmix_elements
-                # FF : Wind Speed            [m/s]
-                # Rad1h : Global irridance   [kJ/m²]
-                # TTT : Temperature 2m above ground [Kelvin]
-                # PPPP : Pressure reduced    [Pa]
-                # -------------------------------------------------------------
                 if mosmix_element in self.dict_IDs.keys():
-                    self.parsed_data[self.dict_IDs[mosmix_element][0]].append([float(x)*self.dict_IDs[mosmix_element][1]+self.dict_IDs[mosmix_element][2] for x in elem[0].text.split()])
+                    self.parsed_data[self.dict_IDs[mosmix_element][0]].append(
+                        [
+                            float(x) * self.dict_IDs[mosmix_element][1] + self.dict_IDs[mosmix_element][2]
+                            for x in elem_2[0].text.split()
+                        ]
+                    )
         Humidity_List = []
         for index, TD in enumerate(self.parsed_data['Td'][-1]):
             Humidity_List.append(self.getHumidity(self.parsed_data['Temperature'][-1][index], TD))

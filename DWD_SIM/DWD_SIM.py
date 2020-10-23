@@ -191,15 +191,15 @@ class SIM:
             self.sandia_module = pvlib.pvsystem.retrieve_sam('cecmod')[self.module]
         else:
             filename = os.path.dirname(os.path.abspath(__file__))
-            filename = os.path.join(filename, 'modul_' + self.module + '.csv')
-            self.sandia_module = pd.read_csv(filename, squeeze=True, index_col=0)
+            filename = os.path.join(filename, 'own_moduls.csv')
+            self.sandia_module = pvlib.pvsystem.retrieve_sam(path=filename)[self.module]
 
         if self.inverter in pvlib.pvsystem.retrieve_sam('cecinverter').keys():
             self.cec_inverter = pvlib.pvsystem.retrieve_sam('cecinverter')[self.inverter]
         else:
             filename = os.path.dirname(os.path.abspath(__file__))
-            filename = os.path.join(filename, 'inverter_' + self.inverter + '.csv')
-            self.cec_inverter = pd.read_csv(filename, squeeze=True, index_col=0)
+            filename = os.path.join(filename, 'own_inverters.csv')
+            self.cec_inverter = pvlib.pvsystem.retrieve_sam(path=filename)[self.inverter]
 
         self.pvliblocation = Location(latitude=self.latitude,
                                       longitude=self.longitude,

@@ -21,7 +21,7 @@ module_name can currently be any of:
   * BYD
   * DWD
   * DWD_SIM
-  * Kostal
+  * Kostal_Piko_BA
   * USV
 
 ### Enabling services

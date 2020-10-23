@@ -2,3 +2,5 @@
 /.idea/
 /logfile_*.log
 /config.ini
+/DWD_SIM/own_moduls.csv
+/DWD_SIM/own_inverters.csv

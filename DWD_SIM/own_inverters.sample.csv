@@ -1,0 +1,5 @@
+Name,Vac,Pso,Paco,Pdco,Vdco,C0,C1,C2,C3,Pnt,Vdcmax,Idcmax,Mppt_low,Mppt_high,CEC_Date,CEC_Type
+Units,V,W,W,W,V,1/W,1/V,1/V,1/V,W,V,A,V,V,,
+[0],inv_snl_ac_voltage,inv_snl_pso,inv_snl_paco,inv_snl_pdco,inv_snl_vdco,inv_snl_c0,inv_snl_c1,inv_snl_c2,inv_snl_c3,inv_snl_pnt,inv_snl_vdcmax,inv_snl_idcmax,inv_snl_mppt_low,inv_snl_mppt_hi,inv_cec_date,inv_cec_type
+Kostal Solar Electric: Piko 5.3 US,0,29.528526,5300,5649.017578,380,-4.190825e-06,-0.000019,0.000709,0.001750,0.96,480,14.865836,100,480,n/a,Utility Interactive
+Kostal Solar Electric: Piko BA 8.0,240,20,8000,8333.0,680,-4.190825e-06,-0.000019,0.000709,0.001750,0.96,950,12.0,350,750,n/a,Utility Interactive

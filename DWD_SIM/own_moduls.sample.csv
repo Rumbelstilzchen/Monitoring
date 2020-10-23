@@ -1,0 +1,4 @@
+Name,Technology,Bifacial,STC,PTC,A_c,Length,Width,N_s,I_sc_ref,V_oc_ref,I_mp_ref,V_mp_ref,alpha_sc,beta_oc,T_NOCT,a_ref,I_L_ref,I_o_ref,R_s,R_sh_ref,Adjust,gamma_r,BIPV,Version,Date
+Units,,,,,m2,m,m,,A,V,A,V,A/K,V/K,C,V,A,A,Ohm,Ohm,%,%/K,,,
+[0],cec_material,lib_is_bifacial,,,cec_area,,,cec_n_s,cec_i_sc_ref,cec_v_oc_ref,cec_i_mp_ref,cec_v_mp_ref,cec_alpha_sc,cec_beta_oc,cec_t_noct,cec_a_ref,cec_i_l_ref,cec_i_o_ref,cec_r_s,cec_r_sh_ref,cec_adjust,cec_gamma_r,,,
+LG Electronics Inc. LG320N1K-A5 mod,Mono-c-Si,0,320.346000,294.700000,1.649000,1.662,0.992,60,10.190000,40.800000,9.620000,33.300000,0.002038,-0.106080,47.700000,1.476693,10.200071,1.008610e-11,0.307043,310.654480,4.687218,-0.357000,N,SAM 2018.11.11 r2,1/3/2019
