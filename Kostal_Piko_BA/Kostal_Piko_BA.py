@@ -18,8 +18,8 @@ def check_values_empty(dict_data):
     return False
 
 
-class Kostal:
-    name = 'Kostal'
+class Kostal_Piko_BA:
+    name = 'Kostal_Piko_BA'
 
     def __init__(self, config):
         self.configuration = config
