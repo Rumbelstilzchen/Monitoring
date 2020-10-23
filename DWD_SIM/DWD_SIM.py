@@ -9,7 +9,7 @@ import zipfile
 import urllib.request
 import shutil
 from datetime import datetime, timedelta
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as x_ET
 import numpy as np
 import pandas as pd
 import pvlib
@@ -21,33 +21,14 @@ from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 logger = logging.getLogger(__name__)
 
 
-my_inverter = {
-    'Vac': 240,
-    'Pso': 20,
-    'Paco': 8000,
-    'Pdco': 8333,
-    'Vdco': 680,
-    'Pnt': 10,
-    'Vdcmax': 950,
-    'Idcmax': 12,
-    'Mppt_low': 350,
-    'Mppt_high': 850,
-    'CAC_Type': 'Utility Interactive',
-}
-
-my_module = {
-    'alpha_sc': 0.003057,
-    'beta_oc': -0.11016,
-    'T_NOCT': 45,
-    'gamma_r': -0.37
-}
-
-
 def check_values_empty(dict_data):
     for value in dict_data.values():
         if value == "":
             return True
     return False
+
+
+name_configsection_SIM = 'DWD_SIM_SolarSystem'
 
 
 class DWD_SIM:
@@ -62,16 +43,16 @@ class DWD_SIM:
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
         self.names_space = {'dwd': 'https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd',
-                   'gx': 'http://www.google.com/kml/ext/2.2',
-                   'kml': 'http://www.opengis.net/kml/2.2', 'atom': 'http://www.w3.org/2005/Atom',
-                   'xal': 'urn:oasis:names:tc:ciq:xsdschema:xAL:2.0'}
-        self.station_IDs = self.configuration['DWD']['DWD_station_IDs'].split(',')
-        self.station_link = self.configuration['DWD']['DWD_link']
+                            'gx': 'http://www.google.com/kml/ext/2.2',
+                            'kml': 'http://www.opengis.net/kml/2.2', 'atom': 'http://www.w3.org/2005/Atom',
+                            'xal': 'urn:oasis:names:tc:ciq:xsdschema:xAL:2.0'}
+        self.station_IDs = self.configuration[self.name]['DWD_station_IDs'].split(',')
+        self.station_link = self.configuration[self.name]['DWD_link']
         self.dict_IDs = {
             # 'TN': 'Tn',  # Minimum temperature - within the last 12 hours
             # 'TX': 'Tx',      # Maximum temperature - within the last 12 hours
             'TTT': ['Temperature', 1, -273.15],  # Temperature 2m above surface
-            'SunD1': ['SS1' , 1, 0],
+            'SunD1': ['SS1', 1, 0],
             'Nh': ['Bewoelkung_H', 1, 0],  # High cloud cover (>7 km)
             'Nm': ['Bewoelkung_M', 1, 0],  # Midlevel cloud cover (2-7 km) (%)
             'Nl': ['Bewoelkung_L', 1, 0],  # Low cloud cover (lower than 2 km) (%)
@@ -83,14 +64,13 @@ class DWD_SIM:
             # 'FXh25': 'fx6',   # Probability of wind gusts >= 25kn within the last 12 hours (% 0..100)
             # 'FXh40': 'fx9',   # Probability of wind gusts >= 40kn within the last 12 hours
             # 'FXh55': 'fx11',  # Probability of wind gusts >= 55kn within the last 12 hours
-            'PPPP': ['Luftdruck', 0.01, 0], # Surface pressure, reduced (Pa)
+            'PPPP': ['Luftdruck', 0.01, 0],  # Surface pressure, reduced (Pa)
             # 'N': 'N',
             'Td': ['Td', 1, -273.15],
             # 'SS24': 'SS24',
             'Rad1h': ['Rad1h', 1, 0],  # kJ/m2
         }
         # self.collect_data()
-
 
     @staticmethod
     def getHumidity(T, TD):
@@ -104,21 +84,22 @@ class DWD_SIM:
         self.parse_data()
         self.average_parsed_data()
         self.add_timesec()
-        return self.SIM_class.simulate_values(self.parsed_data)
-        # return self.parsed_data
+        if name_configsection_SIM in self.configuration.sections():
+            self.parsed_data = self.SIM_class.simulate_values(self.parsed_data)
+        return self.parsed_data
 
     def add_timesec(self):
         self.parsed_data['time_sec'] = [int(x.timestamp()) for x in self.parsed_data['TIMESTAMP']]
-        self.parsed_data['TIMESTAMP'] = [datetime.fromtimestamp(x, self.tz).strftime('%Y-%m-%d %H:%M:%S') for x in self.parsed_data['time_sec']]
+        self.parsed_data['TIMESTAMP'] = \
+            [datetime.fromtimestamp(x, self.tz).strftime('%Y-%m-%d %H:%M:%S') for x in self.parsed_data['time_sec']]
 
     def parse_data(self):
-        self.parsed_data = {}
-        self.parsed_data['TIMESTAMP'] = []
+        self.parsed_data = {'TIMESTAMP': [],
+                            'Humidity': []}
         for item in self.dict_IDs.values():
             self.parsed_data[item[0]] = []
-        self.parsed_data['Humidity'] = []
         for station_ID in self.station_IDs:
-            link = self.configuration['DWD']['DWD_link'].replace('[station_ID]', station_ID)
+            link = self.configuration[self.name]['DWD_link'].replace('[station_ID]', station_ID)
             self.load_data(link)
 
     def average_parsed_data(self):
@@ -150,7 +131,7 @@ class DWD_SIM:
             Myzipfilename = (zip_ref.namelist())
             Myzipfilename = str(Myzipfilename[0])
             with zip_ref.open(Myzipfilename) as file:
-                tree = ET.parse(file)
+                tree = x_ET.parse(file)
 
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
@@ -165,34 +146,22 @@ class DWD_SIM:
         for child in timestamps:
             timevalue.append(pytz.timezone('UTC').localize(datetime.strptime(child.text, '%Y-%m-%dT%H:%M:%S.%fZ')))
 
-        output_data = OrderedDict()
-
         self.parsed_data['TIMESTAMP'].append(timevalue)
         for elem in tree.findall('./kml:Document/kml:Placemark', self.names_space):  # Position us at the Placemark
-            # print ("SUCERJH ", sucher)
-            # print ("Elemente ", elem.tag, elem.attrib, elem.text)
-            mylocation = elem.find('kml:name', self.names_space).text  # Look for the station Number
-
-            # Here we pull the required data out of the xml file
-            # if (self.mylocation == self.mystation):
-            # print ("meine location", self.mylocation)
             myforecastdata = elem.find('kml:ExtendedData', self.names_space)
-            for elem in myforecastdata:
+            for elem_2 in myforecastdata:
                 # We may get the following strings and are only interested in the right hand quoted property name WPcd1:
                 # {'{https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd}elementName': 'WPcd1'}
-                trash = str(elem.attrib)
+                trash = str(elem_2.attrib)
                 trash1, mosmix_element = trash.split("': '")
                 mosmix_element, trash = mosmix_element.split("'}")
-                # -------------------------------------------------------------
-                # Currently looking at the following key Data:
-                # Looking for the following mosmix_elements
-                # FF : Wind Speed            [m/s]
-                # Rad1h : Global irridance   [kJ/m²]
-                # TTT : Temperature 2m above ground [Kelvin]
-                # PPPP : Pressure reduced    [Pa]
-                # -------------------------------------------------------------
                 if mosmix_element in self.dict_IDs.keys():
-                    self.parsed_data[self.dict_IDs[mosmix_element][0]].append([float(x)*self.dict_IDs[mosmix_element][1]+self.dict_IDs[mosmix_element][2] for x in elem[0].text.split()])
+                    self.parsed_data[self.dict_IDs[mosmix_element][0]].append(
+                        [
+                            float(x) * self.dict_IDs[mosmix_element][1] + self.dict_IDs[mosmix_element][2]
+                            for x in elem_2[0].text.split()
+                        ]
+                    )
         Humidity_List = []
         for index, TD in enumerate(self.parsed_data['Td'][-1]):
             Humidity_List.append(self.getHumidity(self.parsed_data['Temperature'][-1][index], TD))
@@ -202,50 +171,59 @@ class DWD_SIM:
 class SIM:
     def __init__(self, config):
         self.config = config
-        self.longitude = (self.config.getfloat('SolarSystem', 'Longitude', raw=True))
-        self.latitude = (self.config.getfloat('SolarSystem', 'Latitude', raw=True))
-        self.altitude = (self.config.getfloat('SolarSystem', 'Altitude', raw=True))
-        self.elevation = (self.config.getfloat('SolarSystem', 'Elevation', raw=True))
-        self.azimuth = (self.config.getfloat('SolarSystem', 'Azimuth', raw=True))
-        self.NumPanels = (self.config.getint('SolarSystem', 'NumPanels', raw=True))
-        self.NumStrings = (self.config.getint('SolarSystem', 'NumStrings', raw=True))
-        self.albedo = (self.config.getfloat('SolarSystem', 'Albedo', raw=True))
-        self.temperature_model = (self.config.get('SolarSystem', 'TEMPERATURE_MODEL', raw=True))
-        self.inverter = (self.config.get('SolarSystem', 'InverterName', raw=True))
-        self.module = (self.config.get('SolarSystem', 'ModuleName', raw=True))
-        self.TemperatureOffset = (self.config.getfloat('SolarSystem', 'TemperatureOffset', raw=True))
-
-
-
-
+        self.longitude = (self.config.getfloat(name_configsection_SIM, 'Longitude', raw=True))
+        self.latitude = (self.config.getfloat(name_configsection_SIM, 'Latitude', raw=True))
+        self.altitude = (self.config.getfloat(name_configsection_SIM, 'Altitude', raw=True))
+        self.elevation = (self.config.getfloat(name_configsection_SIM, 'Elevation', raw=True))
+        self.azimuth = (self.config.getfloat(name_configsection_SIM, 'Azimuth', raw=True))
+        self.NumPanels = (self.config.getint(name_configsection_SIM, 'NumPanels', raw=True))
+        self.NumStrings = (self.config.getint(name_configsection_SIM, 'NumStrings', raw=True))
+        self.albedo = (self.config.getfloat(name_configsection_SIM, 'Albedo', raw=True))
+        self.temperature_model = (self.config.get(name_configsection_SIM, 'TEMPERATURE_MODEL', raw=True))
+        self.inverter = (self.config.get(name_configsection_SIM, 'InverterName', raw=True))
+        self.module = (self.config.get(name_configsection_SIM, 'ModuleName', raw=True))
+        self.module_eff = (self.config.getfloat(name_configsection_SIM, 'ModulEfficiency', raw=True))
+        self.TemperatureOffset = (self.config.getfloat(name_configsection_SIM, 'TemperatureOffset', raw=True))
 
         self.temperature_model_parameters = TEMPERATURE_MODEL_PARAMETERS['sapm'][self.temperature_model]
 
-        self.sandia_module = pvlib.pvsystem.retrieve_sam('cecmod')[self.module]
-        self.sandia_module.replace(pd.Series(my_module))
-        self.cec_inverter = pvlib.pvsystem.retrieve_sam('cecinverter')[self.inverter]
-        self.cec_inverter.replace(pd.Series(my_inverter))
+        if self.module in pvlib.pvsystem.retrieve_sam('cecmod').keys():
+            self.sandia_module = pvlib.pvsystem.retrieve_sam('cecmod')[self.module]
+        else:
+            filename = os.path.dirname(os.path.abspath(__file__))
+            filename = os.path.join(filename, 'modul_' + self.module + '.csv')
+            self.sandia_module = pd.read_csv(filename, squeeze=True, index_col=0)
+
+        if self.inverter in pvlib.pvsystem.retrieve_sam('cecinverter').keys():
+            self.cec_inverter = pvlib.pvsystem.retrieve_sam('cecinverter')[self.inverter]
+        else:
+            filename = os.path.dirname(os.path.abspath(__file__))
+            filename = os.path.join(filename, 'inverter_' + self.inverter + '.csv')
+            self.cec_inverter = pd.read_csv(filename, squeeze=True, index_col=0)
 
         self.pvliblocation = Location(latitude=self.latitude,
-                                        longitude=self.longitude,
-                                        tz="UTC",
-                                        altitude=self.altitude)
+                                      longitude=self.longitude,
+                                      tz="UTC",
+                                      altitude=self.altitude)
 
         self.solarsystem = PVSystem(surface_tilt=self.elevation,
-                                      surface_azimuth=self.azimuth,
-                                      module=self.sandia_module,
-                                      inverter=self.cec_inverter,
-                                      module_parameters=self.sandia_module,
-                                      inverter_parameters=self.cec_inverter,
-                                      albedo=self.albedo,
-                                      modules_per_string=self.NumPanels,
-                                      racking_model="open_rack",
-                                      temperature_model_parameters=self.temperature_model_parameters,
-                                      strings_per_inverter=self.NumStrings)
-        self.ModelChain = ModelChain(self.solarsystem, self.pvliblocation, aoi_model='no_loss',
-                                       orientation_strategy="None", spectral_model='no_loss')
+                                    surface_azimuth=self.azimuth,
+                                    module=self.sandia_module,
+                                    inverter=self.cec_inverter,
+                                    module_parameters=self.sandia_module,
+                                    inverter_parameters=self.cec_inverter,
+                                    albedo=self.albedo,
+                                    modules_per_string=self.NumPanels,
+                                    racking_model="open_rack",
+                                    temperature_model_parameters=self.temperature_model_parameters,
+                                    strings_per_inverter=self.NumStrings)
 
-    def simulate_values(self,parsed_data):
+        self.ModelChain = ModelChain(self.solarsystem, self.pvliblocation, aoi_model='no_loss',
+                                     orientation_strategy="None", spectral_model='no_loss')
+
+        self.simplemultiplicationfactor = self.module_eff * self.NumPanels * self.NumStrings * self.sandia_module.A_c
+
+    def simulate_values(self, parsed_data):
         PandasDF = pd.DataFrame(data=parsed_data)
         PandasDF.Rad1h = PandasDF.Rad1h.astype(
             float)  # Need to ensure we get a float value from Rad1h
@@ -254,40 +232,29 @@ class SIM:
         PandasDF.Luftdruck = PandasDF.Luftdruck.astype(float)
         PandasDF.Temperature = PandasDF.Temperature.astype(float) + self.TemperatureOffset
         PandasDF['Rad1wh'] = PandasDF.Rad1h / 3.6  # Converting from KJ/m² to Wh/m² -and adding as new column Rad1wh
-        PandasDF['myTZtimestamp'] = pd.to_datetime(pd.Series(PandasDF.TIMESTAMP), utc=True)
-        # A horrific hack to get the time series working
-        # first = PandasDF.myTZtimestamp.iloc[0] - timedelta(hours=0, minutes=30)
-        # last = PandasDF.myTZtimestamp.iloc[PandasDF.myTZtimestamp.index[-1]] - timedelta(hours=0, minutes=30)
-        #
-        # # Gathering time series from start - and end hours (240 rows):
-        # local_timestamp = pd.date_range(start=first, end=last, freq='1h', tz='UTC')
-        local_timestamp = pd.DatetimeIndex(pd.to_datetime(pd.Series(PandasDF.TIMESTAMP), utc=True) - timedelta(hours=0, minutes=30))
 
-
-        # PandasDF['Rad1Energy'] = self.simplemultiplicationfactor * PandasDF.Rad1wh
-
+        local_timestamp = pd.DatetimeIndex(
+            pd.to_datetime(pd.Series(PandasDF.TIMESTAMP), utc=True) - timedelta(hours=0, minutes=30)
+        )
         PandasDF.index = local_timestamp
-
-        # Now creating list of unixtimestamps
-        PandasDF['mytimestamp'] = PandasDF.time_sec
 
         # =============================================================================
         # STARTING  SOLAR POSITION AND ATMOSPHERIC MODELING
         # =============================================================================
         solpos = pvlib.solarposition.get_solarposition(time=local_timestamp,
-                                                            latitude=self.latitude,
-                                                            longitude=self.longitude,
-                                                            altitude=self.altitude)
+                                                       latitude=self.latitude,
+                                                       longitude=self.longitude,
+                                                       altitude=self.altitude)
 
         # DNI and DHI calculation from GHI data
         DNI = pvlib.irradiance.disc(ghi=PandasDF.Rad1wh, solar_zenith=solpos.zenith,
-                                         datetime_or_doy=local_timestamp,
-                                         pressure=PandasDF.Luftdruck*100)
+                                    datetime_or_doy=local_timestamp,
+                                    pressure=PandasDF.Luftdruck*100)
         DHI = pvlib.irradiance.erbs(ghi=PandasDF.Rad1wh, zenith=solpos.zenith,
-                                         datetime_or_doy=local_timestamp)
+                                    datetime_or_doy=local_timestamp)
 
         dataheader = {'ghi': PandasDF.Rad1wh, 'dni': DNI.dni, 'dhi': DHI.dhi,
-                           'temp_air': PandasDF.Temperature, 'wind_speed': PandasDF.Windgeschw}
+                      'temp_air': PandasDF.Temperature, 'wind_speed': PandasDF.Windgeschw}
         mc_weather = pd.DataFrame(data=dataheader)
         mc_weather.index = local_timestamp
         # Simulating the PV system using pvlib modelchain
@@ -301,9 +268,13 @@ class SIM:
         # i_sc        v_oc          i_mp        v_mp         p_mp           i_x          i_xx
         parsed_data['DCSim'] = list(self.ModelChain.dc.p_mp)
         parsed_data['VmpSIM'] = list(self.ModelChain.dc.v_mp)
-        parsed_data['ImpSIM'] = list(self.ModelChain.dc.i_mp/2)
+        parsed_data['ImpSIM'] = list(self.ModelChain.dc.i_mp/self.NumStrings)
+
+        parsed_data['Rad1Energy'] = list(self.simplemultiplicationfactor * PandasDF.Rad1wh)
+        parsed_data['Rad1wh'] = list(PandasDF.Rad1wh)
 
         return parsed_data
+
 
 def simulate_old_data():
     parser = DWD_SIM
@@ -344,7 +315,7 @@ def simulate_old_data():
             parsed_data[key] = [x[index] for x in record]
 
     logging_data = parser_init.SIM_class.simulate_values(parsed_data)
-    mysql_status = MYsqlConnection.write_dict_data(logging_data)
+    MYsqlConnection.write_dict_data(logging_data)
 
 
 if __name__ == "__main__":

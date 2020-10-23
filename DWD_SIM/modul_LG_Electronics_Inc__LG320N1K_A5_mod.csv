@@ -1,0 +1,26 @@
+,LG_Electronics_Inc__LG320N1K_A5_mod
+Technology,Mono-c-Si
+Bifacial,0
+STC,320.346
+PTC,294.7
+A_c,1.649
+Length,1.662
+Width,0.992
+N_s,60
+I_sc_ref,10.19
+V_oc_ref,40.8
+I_mp_ref,9.62
+V_mp_ref,33.3
+alpha_sc,0.002038
+beta_oc,-0.10608
+T_NOCT,47.7
+a_ref,1.476693
+I_L_ref,10.200071000000001
+I_o_ref,1.00861e-11
+R_s,0.307043
+R_sh_ref,310.65448
+Adjust,4.687218
+gamma_r,-0.357
+BIPV,N
+Version,SAM 2018.11.11 r2
+Date,1/3/2019
