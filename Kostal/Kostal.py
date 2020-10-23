@@ -83,7 +83,7 @@ class Kostal:
              # 33555713: 'dc3Current',
              # 83888128: 'ownConsumption',
              16780032: 'operatingStatus'}
-            ]
+        ]
         self.average_ignores = [
             'TIMESTAMP',
             'time_sec',
@@ -114,7 +114,7 @@ class Kostal:
     @retry(tries=2, delay=0)
     def load_data_fromurl(self):
         data = OrderedDict()
-        base_url = "http://" + self.configuration['Kostal']['IPAdresse'] + "/api/dxs.json?"
+        base_url = "http://" + self.configuration[self.name]['IPAdresse'] + "/api/dxs.json?"
         self.timestamp = datetime.now(self.tz)
         if self.http is None:
             self.http = urllib3.PoolManager()
@@ -194,13 +194,14 @@ class Kostal:
             self.parsed_data['EinspeisenPower'] = 0
 
     def add_batLadenFrei(self):
-        begrenzung = 0.99 * self.configuration.getfloat('Kostal','LeistungsBegrenzung')
+        begrenzung = 0.99 * self.configuration.getfloat(self.name, 'LeistungsBegrenzung')
         self.parsed_data['BatLaden_Frei'] = 0
         if self.parsed_data['BatPowerLaden'] > 0.1:
             if self.parsed_data['EinspeisenPower'] > begrenzung:
                 self.parsed_data['BatLaden_Frei'] = self.parsed_data['BatPowerLaden']
             elif (self.parsed_data['BatPowerLaden'] + self.parsed_data['EinspeisenPower']) > begrenzung:
-                self.parsed_data['BatLaden_Frei'] = self.parsed_data['BatPowerLaden'] + self.parsed_data['EinspeisenPower'] - begrenzung
+                self.parsed_data['BatLaden_Frei'] = self.parsed_data['BatPowerLaden'] + \
+                                                    self.parsed_data['EinspeisenPower'] - begrenzung
 
 
 if __name__ == "__main__":
