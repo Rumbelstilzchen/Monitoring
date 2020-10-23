@@ -24,7 +24,7 @@ class USV:
         self.tz = pytz.timezone(self.time_zone)
         self.nut_name = "ups"
 
-        self.nut = PyNUTClient(host="192.168.2.55", debug=False, connect=False)
+        self.nut = PyNUTClient(host=self.configuration[self.name]['IPAdresse'], debug=False, connect=False)
         self.parsed_data = None
         self.id_fields = {
             "battery.charge": ["battery_charge", int],
