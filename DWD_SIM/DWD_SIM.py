@@ -176,6 +176,7 @@ class SIM:
         self.altitude = (self.config.getfloat(name_configsection_SIM, 'Altitude', raw=True))
         self.elevation = (self.config.getfloat(name_configsection_SIM, 'Elevation', raw=True))
         self.azimuth = (self.config.getfloat(name_configsection_SIM, 'Azimuth', raw=True))
+        self.min_cos_zenith = self.config.getfloat(name_configsection_SIM, 'min_cos_zenith', raw=True)
         self.NumPanels = (self.config.getint(name_configsection_SIM, 'NumPanels', raw=True))
         self.NumStrings = (self.config.getint(name_configsection_SIM, 'NumStrings', raw=True))
         self.albedo = (self.config.getfloat(name_configsection_SIM, 'Albedo', raw=True))
@@ -249,9 +250,11 @@ class SIM:
         # DNI and DHI calculation from GHI data
         DNI = pvlib.irradiance.disc(ghi=PandasDF.Rad1wh, solar_zenith=solpos.zenith,
                                     datetime_or_doy=local_timestamp,
-                                    pressure=PandasDF.Luftdruck*100)
+                                    pressure=PandasDF.Luftdruck*100,
+                                    min_cos_zenith=self.min_cos_zenith)
         DHI = pvlib.irradiance.erbs(ghi=PandasDF.Rad1wh, zenith=solpos.zenith,
-                                    datetime_or_doy=local_timestamp)
+                                    datetime_or_doy=local_timestamp,
+                                    min_cos_zenith=self.min_cos_zenith)
 
         dataheader = {'ghi': PandasDF.Rad1wh, 'dni': DNI.dni, 'dhi': DHI.dhi,
                       'temp_air': PandasDF.Temperature, 'wind_speed': PandasDF.Windgeschw}

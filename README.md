@@ -10,7 +10,19 @@ pip3 install requirements_USV.txt
 ```
 
 ### Edit config.ini
-The config.ini needs to be adopted so that it fits to your environment/Passwords/IPs
+The config.sample.ini needs to be renamed to config.ini and then
+adopted so that it fits to your environment/Passwords/IPs
+
+### Database
+Currently only MySQL/MariaDB is supported.
+The Table structures, views, procedures and events are stored in:
+```bash
+./base_MYSQL/SQL_structure/
+```
+You might import them with:
+```bash
+mysql -u username -p name_of_DB < [sql-file].sql
+```
 
 ### direct Usage
 Each monitoring can bee called - e.g. for testing - directly:
