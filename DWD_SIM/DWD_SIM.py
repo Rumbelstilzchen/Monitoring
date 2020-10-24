@@ -122,7 +122,7 @@ class DWD_SIM:
         self.parsed_data = temp_data
 
     def load_data(self, link):
-        temp_filename = 'tempfile.zip'
+        temp_filename = 'tempfile_%s.zip' % self.name
         # Download the file from `url` and save it locally under `self.file_name`:
         with urllib.request.urlopen(link) as response, open(temp_filename, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
