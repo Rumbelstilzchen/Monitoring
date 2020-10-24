@@ -1,0 +1,1666 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_MYSQL_SOLAR",
+      "label": "MySQL Solar",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "mysql",
+      "pluginName": "MySQL"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "7.2.2"
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "mysql",
+      "name": "MySQL",
+      "version": "1.0.0"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "$$hashKey": "object:15",
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1603547874694,
+  "links": [
+    {
+      "$$hashKey": "object:88",
+      "asDropdown": true,
+      "icon": "external link",
+      "tags": [
+        "PV"
+      ],
+      "title": "PV",
+      "type": "dashboards"
+    },
+    {
+      "$$hashKey": "object:89",
+      "asDropdown": true,
+      "icon": "external link",
+      "tags": [
+        "Heizung"
+      ],
+      "title": "Heizung",
+      "type": "dashboards"
+    },
+    {
+      "$$hashKey": "object:109",
+      "icon": "doc",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Report",
+      "type": "link",
+      "url": "http://192.168.*.*:8686/api/v5/report/nI87oxqiz?apitoken=[your api token]"
+    }
+  ],
+  "panels": [
+    {
+      "aliasColors": {
+        "BatVorteil": "#d683ce"
+      },
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 10,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 2,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:106",
+          "alias": "Verkauf",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:107",
+          "alias": "Ersparnis",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:108",
+          "alias": "MWST",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:109",
+          "alias": "SteuerGewinn",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:110",
+          "alias": "/^Gewinn|GesÜberschuss|BatVorteil/",
+          "bars": false,
+          "fill": 0,
+          "lines": true,
+          "linewidth": 2,
+          "steppedLine": true
+        },
+        {
+          "$$hashKey": "object:111",
+          "alias": "Gewinn (ohneBat)",
+          "color": "#890f02"
+        },
+        {
+          "$$hashKey": "object:112",
+          "alias": "GesÜberschuss",
+          "color": "#1f78c1"
+        },
+        {
+          "$$hashKey": "object:113",
+          "alias": "/ohneBat/",
+          "dashLength": 2,
+          "dashes": true
+        },
+        {
+          "$$hashKey": "object:114",
+          "alias": "GesÜberschuss (ohneBat)",
+          "color": "#5195ce"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": true,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  Verkauf,\n  Ersparnis,\n  -MWST as MWST,\n  IF (SteuerlGewinn>(Abschreibung+MWST), (Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0) AS SteuerGewinn,\n  IF (SteuerlGewinn>Abschreibung+MWST, (Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)+Verkauf+Ersparnis-MWST-Abschreibung AS Gewinn,\n  IF (SteuerlGewinn>Abschreibung+MWST, (Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)+Verkauf-BezugKosten-MWST-Abschreibung AS GesÜberschuss\nFROM Gewinne_Verlust\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "Verkauf"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  Gewinne_Verlust.time_sec AS time_sec,\n  (IF (Gewinne_Verlust.SteuerlGewinn>Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST, (Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST-Gewinne_Verlust.SteuerlGewinn)*$Steuersatz,0)+Gewinne_Verlust.Verkauf-Gewinne_Verlust.BezugKosten-Gewinne_Verlust.MWST-Gewinne_Verlust.Abschreibung) \n  -(IF (Gewinne_Verlust_PVonly.SteuerlGewinn>Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST, (Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST-Gewinne_Verlust_PVonly.SteuerlGewinn)*$Steuersatz,0)+Gewinne_Verlust_PVonly.Verkauf-Gewinne_Verlust_PVonly.BezugKosten-Gewinne_Verlust_PVonly.MWST-Gewinne_Verlust_PVonly.Abschreibung )\n  AS BatVorteil\nFROM Gewinne_Verlust\nJoin Gewinne_Verlust_PVonly on Gewinne_Verlust.time_sec=Gewinne_Verlust_PVonly.time_sec\nWHERE\n    $__unixEpochFilter(Gewinne_Verlust.time_sec)\nORDER BY Gewinne_Verlust.time_sec",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "hide": true,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  IF (SteuerlGewinn>Abschreibung+MWST, (Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)+Verkauf+Ersparnis-MWST-Abschreibung AS \"Gewinn (ohneBat)\",\n  IF (SteuerlGewinn>Abschreibung+MWST, (Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)+Verkauf-BezugKosten-MWST-Abschreibung AS \"GesÜberschuss (ohneBat)\"\nFROM Gewinne_Verlust_PVonly\nWHERE\n    $__unixEpochFilter(time_sec)\nORDER BY time_sec",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Einnahmen/Steuern/Gewinn(täglich)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 2,
+          "format": "currencyEUR",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "BatVorteil": "#d683ce"
+      },
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 10,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 5,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:282",
+          "alias": "Verkauf",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:283",
+          "alias": "Ersparnis",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:284",
+          "alias": "MWST",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:285",
+          "alias": "SteuerGewinn",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:286",
+          "alias": "/^Gewinn|GesÜberschuss|BatVorteil/",
+          "bars": false,
+          "fill": 0,
+          "lines": true,
+          "linewidth": 2,
+          "steppedLine": true,
+          "zindex": 3
+        },
+        {
+          "$$hashKey": "object:287",
+          "alias": "Gewinn (ohneBat)",
+          "color": "#890f02"
+        },
+        {
+          "$$hashKey": "object:288",
+          "alias": "GesÜberschuss",
+          "color": "#1f78c1"
+        },
+        {
+          "$$hashKey": "object:289",
+          "alias": "/ohneBat/",
+          "dashLength": 2,
+          "dashes": true
+        },
+        {
+          "$$hashKey": "object:290",
+          "alias": "GesÜberschuss (ohneBat)",
+          "color": "#5195ce"
+        },
+        {
+          "$$hashKey": "object:291",
+          "alias": "Abschreibung",
+          "stack": "B"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  sum(Verkauf)/max(day(TIMESTAMP)) as Verkauf,\n  sum(Ersparnis)/max(day(TIMESTAMP)) as Ersparnis,\n  -sum(MWST)/max(day(TIMESTAMP)) as MWST,\n  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz/max(day(TIMESTAMP)),0) as SteuerGewinn,\n  (sum(Verkauf+Ersparnis-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0))/max(day(TIMESTAMP)) as Gewinn,\n  (sum(Verkauf-BezugKosten-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0))/max(day(TIMESTAMP)) as GesÜberschuss,\n  -sum(Abschreibung)/max(day(TIMESTAMP)) as Abschreibung\nFROM Gewinne_Verlust\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY year(TIMESTAMP),month(TIMESTAMP)",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "Verkauf"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  Gewinne_Verlust.time_sec AS \"time\",\n  \"BatVorteil\" as metrics,\n  (IF (sum(Gewinne_Verlust.SteuerlGewinn)>sum(Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST), (sum(Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST)-sum(Gewinne_Verlust.SteuerlGewinn))*$Steuersatz,0)+sum(Gewinne_Verlust.Verkauf-Gewinne_Verlust.BezugKosten-Gewinne_Verlust.MWST-Gewinne_Verlust.Abschreibung) \n  -(IF (sum(Gewinne_Verlust_PVonly.SteuerlGewinn)>sum(Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST), (sum(Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST)-sum(Gewinne_Verlust_PVonly.SteuerlGewinn))*$Steuersatz,0)+sum(Gewinne_Verlust_PVonly.Verkauf-Gewinne_Verlust_PVonly.BezugKosten-Gewinne_Verlust_PVonly.MWST-Gewinne_Verlust_PVonly.Abschreibung) ))/max(day(Gewinne_Verlust.TIMESTAMP))\n  AS value\nFROM Gewinne_Verlust\nJoin Gewinne_Verlust_PVonly on Gewinne_Verlust.time_sec=Gewinne_Verlust_PVonly.time_sec\nWHERE\n    $__unixEpochFilter(Gewinne_Verlust.time_sec)\nGROUP BY year(Gewinne_Verlust.TIMESTAMP),month(Gewinne_Verlust.TIMESTAMP)\n",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "DWD_Daten",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "hide": true,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  (sum(Verkauf+Ersparnis-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0))/max(day(TIMESTAMP)) as \"Gewinn (ohneBat)\",\n  (sum(Verkauf-BezugKosten-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0))/max(day(TIMESTAMP)) as \"GesÜberschuss (ohneBat)\"\nFROM Gewinne_Verlust_PVonly\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY year(TIMESTAMP),month(TIMESTAMP)",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": "12M",
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Einnahmen/Steuern/Gewinn(monatlich)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 2,
+          "format": "currencyEUR",
+          "label": "pro Tag",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "BatVorteil": "#d683ce"
+      },
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 10,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:282",
+          "alias": "Verkauf",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:283",
+          "alias": "Ersparnis",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:284",
+          "alias": "MWST",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:285",
+          "alias": "SteuerGewinn",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:286",
+          "alias": "/^Gewinn|GesÜberschuss|BatVorteil/",
+          "bars": false,
+          "fill": 0,
+          "lines": true,
+          "linewidth": 2,
+          "steppedLine": true,
+          "zindex": 3
+        },
+        {
+          "$$hashKey": "object:287",
+          "alias": "Gewinn (ohneBat)",
+          "color": "#890f02"
+        },
+        {
+          "$$hashKey": "object:288",
+          "alias": "GesÜberschuss",
+          "color": "#1f78c1"
+        },
+        {
+          "$$hashKey": "object:289",
+          "alias": "/ohneBat/",
+          "dashLength": 2,
+          "dashes": true
+        },
+        {
+          "$$hashKey": "object:290",
+          "alias": "GesÜberschuss (ohneBat)",
+          "color": "#5195ce"
+        },
+        {
+          "$$hashKey": "object:291",
+          "alias": "Abschreibung",
+          "stack": "B"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  sum(Verkauf)/max(DAYOFYEAR(TIMESTAMP)) as Verkauf,\n  sum(Ersparnis)/max(DAYOFYEAR(TIMESTAMP)) as Ersparnis,\n  -sum(MWST)/max(DAYOFYEAR(TIMESTAMP)) as MWST,\n  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz/max(DAYOFYEAR(TIMESTAMP)),0) as SteuerGewinn,\n  (sum(Verkauf+Ersparnis-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0))/max(DAYOFYEAR(TIMESTAMP)) as Gewinn,\n  (sum(Verkauf-BezugKosten-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0))/max(DAYOFYEAR(TIMESTAMP)) as GesÜberschuss,\n  -sum(Abschreibung)/max(DAYOFYEAR(TIMESTAMP)) as Abschreibung\nFROM Gewinne_Verlust\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY year(TIMESTAMP)",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "Verkauf"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  Gewinne_Verlust.time_sec AS \"time\",\n  \"BatVorteil\" as metrics,\n  (IF (sum(Gewinne_Verlust.SteuerlGewinn)>sum(Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST), (sum(Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST)-sum(Gewinne_Verlust.SteuerlGewinn))*$Steuersatz,0)+sum(Gewinne_Verlust.Verkauf-Gewinne_Verlust.BezugKosten-Gewinne_Verlust.MWST-Gewinne_Verlust.Abschreibung) \n  -(IF (sum(Gewinne_Verlust_PVonly.SteuerlGewinn)>sum(Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST), (sum(Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST)-sum(Gewinne_Verlust_PVonly.SteuerlGewinn))*$Steuersatz,0)+sum(Gewinne_Verlust_PVonly.Verkauf-Gewinne_Verlust_PVonly.BezugKosten-Gewinne_Verlust_PVonly.MWST-Gewinne_Verlust_PVonly.Abschreibung) ))/max(DAYOFYEAR(Gewinne_Verlust.TIMESTAMP))\n  AS value\nFROM Gewinne_Verlust\nJoin Gewinne_Verlust_PVonly on Gewinne_Verlust.time_sec=Gewinne_Verlust_PVonly.time_sec\nWHERE\n    $__unixEpochFilter(Gewinne_Verlust.time_sec)\nGROUP BY year(Gewinne_Verlust.TIMESTAMP)\n",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "DWD_Daten",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "hide": true,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  (sum(Verkauf+Ersparnis-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0))/max(DAYOFYEAR(TIMESTAMP)) as \"Gewinn (ohneBat)\",\n  (sum(Verkauf-BezugKosten-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0))/max(DAYOFYEAR(TIMESTAMP)) as \"GesÜberschuss (ohneBat)\"\nFROM Gewinne_Verlust_PVonly\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY year(TIMESTAMP)",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": "20y",
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Einnahmen/Steuern/Gewinn(jährlich)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 2,
+          "format": "currencyEUR",
+          "label": "pro Tag",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "BatVorteil": "#d683ce"
+      },
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 10,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "hiddenSeries": false,
+      "id": 13,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:282",
+          "alias": "Verkauf",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:283",
+          "alias": "Ersparnis",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:284",
+          "alias": "MWST",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:285",
+          "alias": "SteuerGewinn",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:286",
+          "alias": "/^Gewinn|GesÜberschuss|BatVorteil/",
+          "bars": false,
+          "fill": 0,
+          "lines": true,
+          "linewidth": 2,
+          "steppedLine": true,
+          "zindex": 3
+        },
+        {
+          "$$hashKey": "object:287",
+          "alias": "Gewinn (ohneBat)",
+          "color": "#890f02"
+        },
+        {
+          "$$hashKey": "object:288",
+          "alias": "GesÜberschuss",
+          "color": "#1f78c1"
+        },
+        {
+          "$$hashKey": "object:289",
+          "alias": "/ohneBat/",
+          "dashLength": 2,
+          "dashes": true
+        },
+        {
+          "$$hashKey": "object:290",
+          "alias": "GesÜberschuss (ohneBat)",
+          "color": "#5195ce"
+        },
+        {
+          "$$hashKey": "object:291",
+          "alias": "Abschreibung",
+          "stack": "B"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  sum(Verkauf) as Verkauf,\n  sum(Ersparnis) as Ersparnis,\n  -sum(MWST) as MWST,\n  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0) as SteuerGewinn,\n  (sum(Verkauf+Ersparnis-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as Gewinn,\n  (sum(Verkauf-BezugKosten-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as GesÜberschuss,\n  -sum(Abschreibung) as Abschreibung\nFROM Gewinne_Verlust\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY year(TIMESTAMP),month(TIMESTAMP)",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "Verkauf"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  Gewinne_Verlust.time_sec AS \"time\",\n  \"BatVorteil\" as metrics,\n  (IF (sum(Gewinne_Verlust.SteuerlGewinn)>sum(Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST), (sum(Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST)-sum(Gewinne_Verlust.SteuerlGewinn))*$Steuersatz,0)+sum(Gewinne_Verlust.Verkauf-Gewinne_Verlust.BezugKosten-Gewinne_Verlust.MWST-Gewinne_Verlust.Abschreibung) \n  -(IF (sum(Gewinne_Verlust_PVonly.SteuerlGewinn)>sum(Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST), (sum(Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST)-sum(Gewinne_Verlust_PVonly.SteuerlGewinn))*$Steuersatz,0)+sum(Gewinne_Verlust_PVonly.Verkauf-Gewinne_Verlust_PVonly.BezugKosten-Gewinne_Verlust_PVonly.MWST-Gewinne_Verlust_PVonly.Abschreibung) ))\n  AS value\nFROM Gewinne_Verlust\nJoin Gewinne_Verlust_PVonly on Gewinne_Verlust.time_sec=Gewinne_Verlust_PVonly.time_sec\nWHERE\n    $__unixEpochFilter(Gewinne_Verlust.time_sec)\nGROUP BY year(Gewinne_Verlust.TIMESTAMP),month(Gewinne_Verlust.TIMESTAMP)\n",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "DWD_Daten",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "hide": true,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  (sum(Verkauf+Ersparnis-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as \"Gewinn (ohneBat)\",\n  (sum(Verkauf-BezugKosten-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as \"GesÜberschuss (ohneBat)\"\nFROM Gewinne_Verlust_PVonly\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY year(TIMESTAMP),month(TIMESTAMP)",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": "12M",
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Einnahmen/Steuern/Gewinn(monatlich)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1401",
+          "decimals": 2,
+          "format": "currencyEUR",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1402",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "BatVorteil": "#d683ce"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 18,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "hiddenSeries": false,
+      "id": 11,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "/Gewinn/",
+          "color": "#3f6833"
+        },
+        {
+          "alias": "/GesÜberschuss/",
+          "color": "#0a437c"
+        },
+        {
+          "alias": "/ohneBat/",
+          "color": "#58140c"
+        },
+        {
+          "alias": "/Jahr/",
+          "legend": false,
+          "lines": false,
+          "points": true
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  T1.time,\n  -15565.20*POW(1+$zinssatz,YEAR(T1.TIMESTAMP)-2019+1)+sum(T1.value) over (order by T1.grouping) as value,\n  \"Gewinn (Jahr)\" as metrics\n  FROM (\n    SELECT\n      max(time_sec) AS \"time\",\n      TIMESTAMP as TIMESTAMP,\n      (sum(Verkauf+Ersparnis-MWST) +  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as value,\n     YEAR(TIMESTAMP) as grouping\n    FROM Gewinne_Verlust\n    WHERE\n      $__unixEpochFilter(time_sec)\n    GROUP BY YEAR(TIMESTAMP)\n  )T1\n  group by T1.grouping",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  T1.time,\n  -15565.20*POW(1+$zinssatz,YEAR(T1.TIMESTAMP)-2019+1)+sum(T1.value) over (order by T1.grouping) as value,\n  \"Gewinn\" as metrics\n  FROM (\n    SELECT\n      max(time_sec) AS \"time\",\n      TIMESTAMP as TIMESTAMP,\n      (sum(Verkauf+Ersparnis-MWST) +  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as value,\n      Date_format(min(TIMESTAMP),\"%Y%m\") as grouping\n    FROM Gewinne_Verlust\n    WHERE\n      $__unixEpochFilter(time_sec)\n    GROUP BY YEAR(TIMESTAMP), MONTH(TIMESTAMP)\n  )T1\n  group by T1.grouping",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  T1.time,\n  -10675.20*POW(1+$zinssatz,YEAR(T1.TIMESTAMP)-2019+1)+4890*(POW(1+$zinssatz,YEAR(T1.TIMESTAMP)-2019+1)-1)+sum(T1.value) over (order by T1.grouping) as value,\n  \"Gewinn (ohneBat) (Jahr)\" as metrics\nFROM (\n  SELECT\n    max(time_sec) AS \"time\",\n      TIMESTAMP as TIMESTAMP,\n    (sum(Verkauf+Ersparnis-MWST) +  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as value,\n    YEAR(TIMESTAMP) as grouping\n  FROM Gewinne_Verlust_PVonly\n  WHERE\n    $__unixEpochFilter(time_sec)\n  GROUP BY YEAR(TIMESTAMP)\n)T1\ngroup by T1.grouping",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  T1.time,\n  -10675.20*POW(1+$zinssatz,YEAR(T1.TIMESTAMP)-2019+1)+4890*(POW(1+$zinssatz,YEAR(T1.TIMESTAMP)-2019+1)-1)+sum(T1.value) over (order by T1.grouping) as value,\n  \"Gewinn (ohneBat)\" as metrics\nFROM (\n  SELECT\n    max(time_sec) AS \"time\",\n      TIMESTAMP as TIMESTAMP,\n    (sum(Verkauf+Ersparnis-MWST) +  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as value,\n    Date_format(min(TIMESTAMP),\"%Y%m\") as grouping\n  FROM Gewinne_Verlust_PVonly\n  WHERE\n    $__unixEpochFilter(time_sec)\n  GROUP BY YEAR(TIMESTAMP), MONTH(TIMESTAMP)\n)T1\ngroup by T1.grouping",
+          "refId": "D",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  T1.time,\n  -15565.20*POW(1+$zinssatz,YEAR(T1.TIMESTAMP)-2019+1)+sum(T1.value) over (order by T1.grouping) as value,\n  \"GesÜberschuss (Jahr)\" as metrics\n  FROM (\n    SELECT\n      max(time_sec) AS \"time\",\n      TIMESTAMP as TIMESTAMP,\n      (sum(Verkauf-BezugKosten-MWST) +  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as value,\n      YEAR(TIMESTAMP) as grouping\n    FROM Gewinne_Verlust\n    WHERE\n      $__unixEpochFilter(time_sec)\n    GROUP BY YEAR(TIMESTAMP)\n  )T1\n  group by T1.grouping",
+          "refId": "E",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  T1.time,\n  -15565.20*POW(1+$zinssatz,YEAR(T1.TIMESTAMP)-2019+1)+sum(T1.value) over (order by T1.grouping) as value,\n  \"GesÜberschuss\" as metrics\n  FROM (\n    SELECT\n      max(time_sec) AS \"time\",\n      TIMESTAMP as TIMESTAMP,\n      (sum(Verkauf-BezugKosten-MWST) +  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as value,\n      Date_format(min(TIMESTAMP),\"%Y%m\") as grouping\n    FROM Gewinne_Verlust\n    WHERE\n      $__unixEpochFilter(time_sec)\n    GROUP BY YEAR(TIMESTAMP), MONTH(TIMESTAMP)\n  )T1\n  group by T1.grouping",
+          "refId": "F",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": "5y",
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Gewinnentwicklung",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 2,
+          "format": "currencyEUR",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "BatVorteil": "#d683ce"
+      },
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 10,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "hiddenSeries": false,
+      "id": 14,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:282",
+          "alias": "Verkauf",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:283",
+          "alias": "Ersparnis",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:284",
+          "alias": "MWST",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:285",
+          "alias": "SteuerGewinn",
+          "stack": "B"
+        },
+        {
+          "$$hashKey": "object:286",
+          "alias": "/^Gewinn|GesÜberschuss|BatVorteil/",
+          "bars": false,
+          "fill": 0,
+          "lines": true,
+          "linewidth": 2,
+          "steppedLine": true,
+          "zindex": 3
+        },
+        {
+          "$$hashKey": "object:287",
+          "alias": "Gewinn (ohneBat)",
+          "color": "#890f02"
+        },
+        {
+          "$$hashKey": "object:288",
+          "alias": "GesÜberschuss",
+          "color": "#1f78c1"
+        },
+        {
+          "$$hashKey": "object:289",
+          "alias": "/ohneBat/",
+          "dashLength": 2,
+          "dashes": true
+        },
+        {
+          "$$hashKey": "object:290",
+          "alias": "GesÜberschuss (ohneBat)",
+          "color": "#5195ce"
+        },
+        {
+          "$$hashKey": "object:291",
+          "alias": "Abschreibung",
+          "stack": "B"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  sum(Verkauf) as Verkauf,\n  sum(Ersparnis) as Ersparnis,\n  -sum(MWST) as MWST,\n  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0) as SteuerGewinn,\n  (sum(Verkauf+Ersparnis-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as Gewinn,\n  (sum(Verkauf-BezugKosten-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as GesÜberschuss,\n  -sum(Abschreibung) as Abschreibung\nFROM Gewinne_Verlust\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY year(TIMESTAMP)",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "Verkauf"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  Gewinne_Verlust.time_sec AS \"time\",\n  \"BatVorteil\" as metrics,\n  (IF (sum(Gewinne_Verlust.SteuerlGewinn)>sum(Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST), (sum(Gewinne_Verlust.Abschreibung+Gewinne_Verlust.MWST)-sum(Gewinne_Verlust.SteuerlGewinn))*$Steuersatz,0)+sum(Gewinne_Verlust.Verkauf-Gewinne_Verlust.BezugKosten-Gewinne_Verlust.MWST-Gewinne_Verlust.Abschreibung) \n  -(IF (sum(Gewinne_Verlust_PVonly.SteuerlGewinn)>sum(Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST), (sum(Gewinne_Verlust_PVonly.Abschreibung+Gewinne_Verlust_PVonly.MWST)-sum(Gewinne_Verlust_PVonly.SteuerlGewinn))*$Steuersatz,0)+sum(Gewinne_Verlust_PVonly.Verkauf-Gewinne_Verlust_PVonly.BezugKosten-Gewinne_Verlust_PVonly.MWST-Gewinne_Verlust_PVonly.Abschreibung) ))\n  AS value\nFROM Gewinne_Verlust\nJoin Gewinne_Verlust_PVonly on Gewinne_Verlust.time_sec=Gewinne_Verlust_PVonly.time_sec\nWHERE\n    $__unixEpochFilter(Gewinne_Verlust.time_sec)\nGROUP BY year(Gewinne_Verlust.TIMESTAMP)\n",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "DWD_Daten",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "hide": true,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  (sum(Verkauf+Ersparnis-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as \"Gewinn (ohneBat)\",\n  (sum(Verkauf-BezugKosten-MWST-Abschreibung)+  IF(sum(SteuerlGewinn)>sum(Abschreibung+MWST),sum(Abschreibung+MWST-SteuerlGewinn)*$Steuersatz,0)) as \"GesÜberschuss (ohneBat)\"\nFROM Gewinne_Verlust_PVonly\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY year(TIMESTAMP)",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "Gewinne_Verlust",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": "20y",
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Einnahmen/Steuern/Gewinn(jährlich)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1529",
+          "decimals": 2,
+          "format": "currencyEUR",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1530",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    }
+  ],
+  "refresh": false,
+  "schemaVersion": 26,
+  "style": "dark",
+  "tags": [
+    "PV"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "tags": [],
+          "text": "0.25",
+          "value": "0.25"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Stuersatz",
+        "multi": false,
+        "name": "Steuersatz",
+        "options": [
+          {
+            "selected": false,
+            "text": "0.2",
+            "value": "0.2"
+          },
+          {
+            "selected": false,
+            "text": "0.25",
+            "value": "0.25"
+          },
+          {
+            "selected": false,
+            "text": "0.3",
+            "value": "0.3"
+          },
+          {
+            "selected": false,
+            "text": "0.35",
+            "value": "0.35"
+          },
+          {
+            "selected": true,
+            "text": "0.4",
+            "value": "0.4"
+          }
+        ],
+        "query": "0.2,0.25,0.3,0.35,0.4",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "tags": [],
+          "text": "0.02",
+          "value": "0.02"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "GuthabenZins",
+        "multi": false,
+        "name": "zinssatz",
+        "options": [
+          {
+            "selected": true,
+            "text": "0.02",
+            "value": "0.02"
+          },
+          {
+            "selected": false,
+            "text": "0.01",
+            "value": "0.01"
+          },
+          {
+            "selected": false,
+            "text": "0.05",
+            "value": "0.05"
+          }
+        ],
+        "query": "0.02,0.01,0.05",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-32d/d",
+    "to": "now/d"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
+  "timezone": "",
+  "title": "08 Gewinne",
+  "uid": "nI87oxqiz",
+  "version": 27
+}

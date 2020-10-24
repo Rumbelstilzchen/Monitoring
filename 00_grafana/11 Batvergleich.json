@@ -1,0 +1,2175 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_MYSQL_SOLAR",
+      "label": "MySQL Solar",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "mysql",
+      "pluginName": "MySQL"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "7.2.2"
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "mysql",
+      "name": "MySQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "singlestat",
+      "name": "Singlestat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table-old",
+      "name": "Table (old)",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "$$hashKey": "object:379",
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1603570077792,
+  "links": [
+    {
+      "$$hashKey": "object:144",
+      "asDropdown": true,
+      "icon": "external link",
+      "tags": [
+        "PV"
+      ],
+      "title": "PV",
+      "type": "dashboards"
+    },
+    {
+      "$$hashKey": "object:145",
+      "asDropdown": true,
+      "icon": "external link",
+      "tags": [
+        "Heizung"
+      ],
+      "title": "Heizung",
+      "type": "dashboards"
+    },
+    {
+      "$$hashKey": "object:165",
+      "icon": "doc",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Report",
+      "type": "link",
+      "url": "http://192.168.*.*:8686/api/v5/report/WcJ_DCkWk?apitoken=[your api token]"
+    }
+  ],
+  "panels": [
+    {
+      "cacheTimeout": null,
+      "colorBackground": false,
+      "colorValue": false,
+      "colors": [
+        "#299c46",
+        "rgba(237, 129, 40, 0.89)",
+        "#d44a3a"
+      ],
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "format": "string",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": true
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 16,
+      "interval": null,
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": false,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "\"no matter\"",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  Date_format(TIMESTAMP,'%d.%m.%Y %k:%i') as value\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec DESC LIMIT 1",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "acPower"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "WR_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": "",
+      "timeShift": null,
+      "title": "Zeit",
+      "transparent": true,
+      "type": "singlestat",
+      "valueFontSize": "80%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "N/A",
+          "value": "null"
+        }
+      ],
+      "valueName": "last_time"
+    },
+    {
+      "cacheTimeout": null,
+      "colorBackground": false,
+      "colorValue": false,
+      "colors": [
+        "#299c46",
+        "rgba(237, 129, 40, 0.89)",
+        "#d44a3a"
+      ],
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "format": "none",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": true
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 7,
+        "x": 0,
+        "y": 2
+      },
+      "id": 24,
+      "interval": null,
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "postfix": "",
+      "postfixFontSize": "50%",
+      "prefix": "",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": false,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "\"no matter\"",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  Date_format(TIMESTAMP,'%d.%m.%Y') as value\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec DESC LIMIT 1",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "acPower"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "WR_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": "",
+      "timeShift": "$days",
+      "title": "Datum",
+      "transparent": true,
+      "type": "singlestat",
+      "valueFontSize": "80%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "N/A",
+          "value": "null"
+        }
+      ],
+      "valueName": "last_time"
+    },
+    {
+      "columns": [],
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fontSize": "100%",
+      "gridPos": {
+        "h": 4,
+        "w": 9,
+        "x": 7,
+        "y": 2
+      },
+      "id": 31,
+      "links": [],
+      "pageSize": null,
+      "scroll": true,
+      "showHeader": true,
+      "sort": {
+        "col": 2,
+        "desc": false
+      },
+      "styles": [
+        {
+          "alias": "Time",
+          "align": "auto",
+          "colorMode": "value",
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "pattern": "Time",
+          "preserveFormat": false,
+          "type": "string"
+        },
+        {
+          "alias": "",
+          "align": "auto",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 0,
+          "link": false,
+          "mappingType": 1,
+          "pattern": "Bat Status",
+          "thresholds": [],
+          "type": "number",
+          "unit": "percent"
+        },
+        {
+          "alias": "",
+          "align": "auto",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD",
+          "decimals": 2,
+          "mappingType": 1,
+          "pattern": "Datum",
+          "thresholds": [],
+          "type": "date",
+          "unit": "short"
+        },
+        {
+          "alias": "",
+          "align": "auto",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "decimals": 1,
+          "pattern": "/.*/",
+          "thresholds": [],
+          "type": "number",
+          "unit": "kwatth"
+        }
+      ],
+      "targets": [
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  \"WR: Sum (timerange)\" as \"type\",\n  sum(BatPowerLaden)/60000 AS \"Bat Laden\",\n  sum(BatPowerEntladen)/60000 AS \"Bat\"\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  \"BYD: Sum (timerange)\" as \"type\",\n  max(Laden_kWh)-min(Laden_kWh) AS \"Bat Laden\",\n  max(EntLaden_kWh)-min(EntLaden_kWh) AS \"Bat\"\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "timeShift": "$days",
+      "title": "Overview",
+      "transform": "table",
+      "type": "table-old"
+    },
+    {
+      "aliasColors": {
+        "Eigenverbrauchsanteil": "#f2c96d"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 10,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "hiddenSeries": false,
+      "hideTimeOverride": false,
+      "id": 4,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 0,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:526",
+          "alias": "PV Power",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:527",
+          "alias": "Bat Power",
+          "color": "#0a437c",
+          "fillBelowTo": "PV Power",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:528",
+          "alias": "Bat Laden",
+          "color": "#511749",
+          "fillBelowTo": "Bat Power",
+          "stack": "A"
+        },
+        {
+          "$$hashKey": "object:529",
+          "alias": "WR",
+          "bars": false,
+          "color": "#bf1b00",
+          "fill": 0,
+          "lines": true,
+          "linewidth": 1
+        },
+        {
+          "$$hashKey": "object:530",
+          "alias": "Einspeisen",
+          "bars": false,
+          "color": "#d683ce",
+          "fill": 0,
+          "lines": true,
+          "linewidth": 1
+        },
+        {
+          "$$hashKey": "object:531",
+          "alias": "Eigenverbrauchsanteil",
+          "fill": 0,
+          "lines": true,
+          "linewidth": 1,
+          "yaxis": 2,
+          "zindex": 3
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  dcPowerPV AS \"PV Power\",\n  BatPowerEntLaden AS \"Bat Power\",\n  acPower AS WR,\n  -BatPowerLaden AS \"Bat Laden\",\n  EinspeisenPower AS Einspeisen\n  /* (AktHomeConsumptionSolar+AktHomeConsumptionBat)/acPower AS Eigenverbrauchsanteil */\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nOrder By time_sec",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "history",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": "$days",
+      "title": "PV Power",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:606",
+          "format": "watt",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:607",
+          "format": "percentunit",
+          "label": null,
+          "logBase": 1,
+          "max": "1",
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "Bat Strom Entnahme": "#962d82"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "hiddenSeries": false,
+      "id": 29,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:513",
+          "alias": "/WR/",
+          "color": "#ef843c"
+        },
+        {
+          "$$hashKey": "object:514",
+          "alias": "/Spannung/",
+          "linewidth": 3
+        },
+        {
+          "$$hashKey": "object:515",
+          "alias": "/Entnahme/",
+          "dashLength": 3,
+          "dashes": true
+        },
+        {
+          "$$hashKey": "object:516",
+          "alias": "/Strom/",
+          "yaxis": 2
+        },
+        {
+          "$$hashKey": "object:517",
+          "alias": "/BYD/",
+          "color": "#1f78c1"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "\"BYD: Bat Spannung\"",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  round(time_sec,-1) AS time_sec,\n  PackVoltage_V as \"BYD: Bat Spannung\",\n  if(Current_A>0,Current_A,0) as \"BYD: Bat Strom Laden\",\n  if(Current_A<0,-Current_A,0) as \"BYD: Bat Strom Entnahme\"\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "PackVoltage_V"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "\"WR: Bat Spannung\"",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  round(time_sec,-1) AS time_sec,\n  BatVoltage as \"WR: Bat Spannung\",\n  if(BatCurrentDir = 0,BatCurrent,0) as \"WR: Bat Strom Laden\",\n  if(BatCurrentDir = 1,BatCurrent,0) as \"WR: Bat Strom Entnahme\"\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "BatVoltage"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "WR_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": "$days",
+      "title": "Spannungen / Ströme",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:550",
+          "format": "volt",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:551",
+          "decimals": 1,
+          "format": "amp",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "Laden frei": "#99440a"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "hiddenSeries": false,
+      "id": 33,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "/kWh/i",
+          "fill": 0,
+          "linewidth": 3,
+          "steppedLine": true,
+          "yaxis": 2,
+          "zindex": -3
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  \"Entladen (WR)\" AS metric,\n  avg(BatPowerEntladen) AS value\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY time_sec DIV 300",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "history",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec AS \"time\",\n  \"Entladen (BYD)\" AS metric,\n  (max(Entladen_kWh)-min(Entladen_kWh))*12000 as value\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY time_sec DIV 300",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "Laden_kWh"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  \"kWh Entladen\" AS metric,\n  sum(BatPowerEntladen)/60000 AS value\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY to_days(timestamp),hour(timestamp)",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "history",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec AS \"time\",\n  \"kWh Entladen (BYD)\" AS metric,\n  (max(Entladen_kWh)-min(Entladen_kWh)) as value\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY to_days(timestamp),hour(timestamp)",
+          "refId": "D",
+          "select": [
+            [
+              {
+                "params": [
+                  "Laden_kWh"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": "$days",
+      "title": "Batterie - Entnahme",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "watt",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "decimals": 2,
+          "format": "kwatth",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "Laden frei": "#99440a"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
+      "hiddenSeries": false,
+      "id": 34,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "/kWh/i",
+          "fill": 0,
+          "linewidth": 3,
+          "steppedLine": true,
+          "yaxis": 2,
+          "zindex": -3
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  \"Laden\" AS metric,\n  avg(BatPowerLaden) AS value\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY time_sec DIV 300",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "history",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec AS \"time\",\n  \"Laden (BYD)\" AS metric,\n  (max(Laden_kWh)-min(Laden_kWh))*12000 as value\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY time_sec DIV 300",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "Laden_kWh"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec,\n  \"kWh Laden\" AS metric,\n  sum(BatPowerLaden)/60000 AS value\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY to_days(timestamp),hour(timestamp)",
+          "refId": "C",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "history",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec AS \"time\",\n  \"kWh Laden (BYD)\" AS metric,\n  (max(Laden_kWh)-min(Laden_kWh)) as value\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY to_days(timestamp),hour(timestamp)",
+          "refId": "D",
+          "select": [
+            [
+              {
+                "params": [
+                  "Laden_kWh"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": "$days",
+      "title": "Batterie - Laden",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "watt",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "decimals": 2,
+          "format": "kwatth",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "Laden frei": "#99440a"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "hiddenSeries": false,
+      "id": 32,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "Ladestand",
+          "yaxis": 2,
+          "zindex": -3
+        },
+        {
+          "alias": "Laden",
+          "zindex": -1
+        },
+        {
+          "alias": "Laden frei",
+          "fill": 2,
+          "zindex": 0
+        },
+        {
+          "alias": "Entladen",
+          "zindex": 3
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  round(time_sec,-1) as time_sec,\n  \"Ladestand (WR)\" AS metric,\n  avg(BatStateOfCharge) AS value\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY time_sec DIV 300",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "time_sec"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "history",
+          "timeColumn": "TIMESTAMP",
+          "timeColumnType": "timestamp",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  round(time_sec,-1) as time_sec,\n  \"Ladestand (BYD)\" AS metric,\n  SOC\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "SOC"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": "$days",
+      "title": "Batterie -SOC",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 1,
+          "format": "percent",
+          "label": null,
+          "logBase": 1,
+          "max": "100",
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "percent",
+          "label": null,
+          "logBase": 1,
+          "max": "100",
+          "min": "0",
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 45
+      },
+      "hiddenSeries": false,
+      "id": 37,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:797",
+          "alias": "/Pos/",
+          "yaxis": 2,
+          "zindex": -3
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_sec AS \"time\",\n  \"PackVoltage_V\" as \"metrics\",\n  PackVoltage_V/7/16\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "PackVoltage_V"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": false,
+          "rawSql": "SELECT\n  time_sec AS \"time\",\n  MaxCellVol_V,\n  MinCellVol_V,\n  MaxVolPos,\n  MinVolPos\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec",
+          "refId": "B",
+          "select": [
+            [
+              {
+                "params": [
+                  "MaxCellVol_V"
+                ],
+                "type": "column"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "MinCellVol_V"
+                ],
+                "type": "column"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "MaxVolPos"
+                ],
+                "type": "column"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "MinVolPos"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": "$days",
+      "title": "Cell Spanungen...",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:812",
+          "format": "volt",
+          "label": "Spannung",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:813",
+          "format": "none",
+          "label": "Position",
+          "logBase": 1,
+          "max": "7",
+          "min": "1",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 53
+      },
+      "hiddenSeries": false,
+      "id": 36,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:991",
+          "alias": "MaxTempPos",
+          "yaxis": 2
+        },
+        {
+          "$$hashKey": "object:992",
+          "alias": "MinTempPos",
+          "yaxis": 2
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": false,
+          "rawSql": "SELECT\n  time_sec AS \"time\",\n  SysTemp_C,\n  MaxCellTemp_C,\n  MinCellTemp_C,\n  MaxTempPos,\n  MinTempPos\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nORDER BY time_sec",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "SysTemp_C"
+                ],
+                "type": "column"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "MaxCellTemp_C"
+                ],
+                "type": "column"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "MinCellTemp_C"
+                ],
+                "type": "column"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "MaxTempPos"
+                ],
+                "type": "column"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "MinTempPos"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": "$days",
+      "title": "Temperaturen...",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1011",
+          "format": "celsius",
+          "label": "Temperatur",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1012",
+          "decimals": null,
+          "format": "none",
+          "label": "Position",
+          "logBase": 1,
+          "max": "7",
+          "min": "1",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 61
+      },
+      "hiddenSeries": false,
+      "id": 39,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:166",
+          "alias": "Counts",
+          "fill": 0,
+          "yaxis": 2
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": true,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [
+            {
+              "params": [
+                "$__interval",
+                "none"
+              ],
+              "type": "time"
+            }
+          ],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  $__unixEpochGroupAlias(time_sec,$__interval),\n  max(Laden_kWh)-min(Laden_kWh) AS Laden_kWh,\n  max(Entladen_kWh)-min(Entladen_kWh) AS Entladen_kWh,\n  CycleCounts AS Counts\nFROM BYD_Daten\nWHERE\n  $__unixEpochFilter(time_sec)\nGROUP BY CycleCounts",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "Laden_kWh"
+                ],
+                "type": "column"
+              },
+              {
+                "params": [
+                  "avg"
+                ],
+                "type": "aggregate"
+              },
+              {
+                "params": [
+                  "Laden_kWh"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "CycleCounts"
+                ],
+                "type": "column"
+              },
+              {
+                "params": [
+                  "avg"
+                ],
+                "type": "aggregate"
+              },
+              {
+                "params": [
+                  "Laden_kWh"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "table": "BYD_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": "5M",
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "NR Cycles",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:175",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:176",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_MYSQL_SOLAR}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 70
+      },
+      "hiddenSeries": false,
+      "id": 46,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": false,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.2.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  T1.time_sec as time_sec,\n  avg(T1.value) as value,\n  metrics\nFROM\n(SELECT\n  time_sec+3*3600 AS \"time_sec\",\n  avg(BatPowerEntLaden)*7*100/(max(BatStateOfCharge)-min(BatStateOfCharge)) as value,\n  \"Expected Capacity\" as metrics,\n  DATE_ADD(TIMESTAMP, INTERVAL 3 HOUR) as TIMESTAMP\nFROM WR_Daten\nWHERE\n  $__unixEpochFilter(time_sec+3*3600) and HOUR(DATE_ADD(TIMESTAMP, INTERVAL 3 HOUR))<8 and BatPowerLaden=0\nGroup by TO_DAYS(DATE_ADD(TIMESTAMP, INTERVAL 3 HOUR)))T1\nWhere T1.value>2\nGroup by year(T1.TIMESTAMP),month(T1.TIMESTAMP)",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "BatPowerEntLaden"
+                ],
+                "type": "column"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "BatStateOfCharge"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "table": "WR_Daten",
+          "timeColumn": "time_sec",
+          "timeColumnType": "int",
+          "where": [
+            {
+              "name": "$__unixEpochFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": "2y",
+      "timeRegions": [],
+      "timeShift": "$timeshift",
+      "title": "Capacity estimation",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1231",
+          "format": "watth",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1232",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    }
+  ],
+  "refresh": "30m",
+  "schemaVersion": 26,
+  "style": "dark",
+  "tags": [
+    "PV"
+  ],
+  "templating": {
+    "list": [
+      {
+        "auto": false,
+        "auto_count": 30,
+        "auto_min": "10s",
+        "current": {
+          "selected": false,
+          "text": "0d",
+          "value": "0d"
+        },
+        "hide": 0,
+        "label": "Tage",
+        "name": "days",
+        "options": [
+          {
+            "selected": true,
+            "text": "0d",
+            "value": "0d"
+          },
+          {
+            "selected": false,
+            "text": "1d",
+            "value": "1d"
+          },
+          {
+            "selected": false,
+            "text": "2d",
+            "value": "2d"
+          },
+          {
+            "selected": false,
+            "text": "3d",
+            "value": "3d"
+          },
+          {
+            "selected": false,
+            "text": "4d",
+            "value": "4d"
+          },
+          {
+            "selected": false,
+            "text": "5d",
+            "value": "5d"
+          },
+          {
+            "selected": false,
+            "text": "6d",
+            "value": "6d"
+          },
+          {
+            "selected": false,
+            "text": "7d",
+            "value": "7d"
+          },
+          {
+            "selected": false,
+            "text": "8d",
+            "value": "8d"
+          },
+          {
+            "selected": false,
+            "text": "9d",
+            "value": "9d"
+          },
+          {
+            "selected": false,
+            "text": "10d",
+            "value": "10d"
+          }
+        ],
+        "query": "0d,1d,2d,3d,4d,5d,6d,7d,8d,9d,10d",
+        "refresh": 2,
+        "skipUrlSync": false,
+        "type": "interval"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1d/d",
+    "to": "now/d"
+  },
+  "timepicker": {
+    "hidden": false,
+    "refresh_intervals": [
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
+  "timezone": "",
+  "title": "11 Batvergleich",
+  "uid": "WcJ_DCkWk",
+  "version": 30
+}

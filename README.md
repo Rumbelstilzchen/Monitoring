@@ -46,6 +46,11 @@ sudo systemctl start log_USV
 sudo systemctl daemon-reload
 ```
 
+### Visualisation (Grafana)
+The dashboards I have in use with grafana are placed within ./00_grafana/
+Each Dashboard has its own *.json file. To give an impression what is within each boards a report
+exported to *.pdf is attached
+
 ### Disclaimer
 **Warning:**
 Please note that you are responsible to operate this program and comply with regulations imposed on you by other
