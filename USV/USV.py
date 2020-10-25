@@ -20,7 +20,8 @@ class USV:
         self.timestamp = None
         self.http = None
         self.parsed_data = OrderedDict()
-        self.time_zone = 'Europe/Berlin'
+        # self.time_zone = 'Europe/Berlin'
+        self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
         self.nut_name = "ups"
 
