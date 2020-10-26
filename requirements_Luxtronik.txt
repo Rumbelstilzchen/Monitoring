@@ -1,0 +1,5 @@
+# PyMySQL
+mysql-connector-python
+retry
+pytz
+urllib3
