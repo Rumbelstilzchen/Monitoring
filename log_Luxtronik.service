@@ -1,7 +1,8 @@
 [Unit]
-Description=Log DWD
+Description=Log Luxtronik
 Wants=network.target
 After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -10,6 +11,7 @@ WorkingDirectory=/home/pi/PythonProgs/monitoring
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
+RestartSec=30
 User=pi
 
 [Install]
