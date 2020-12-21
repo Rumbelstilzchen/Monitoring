@@ -219,8 +219,11 @@ class SIM:
                                     temperature_model_parameters=self.temperature_model_parameters,
                                     strings_per_inverter=self.NumStrings)
 
-        self.ModelChain = ModelChain(self.solarsystem, self.pvliblocation, aoi_model='no_loss',
-                                     orientation_strategy="None", spectral_model='no_loss')
+        self.ModelChain = ModelChain(self.solarsystem, self.pvliblocation, aoi_model="no_loss",
+                                     orientation_strategy=None, spectral_model="no_loss",
+                                     temperature_model="sapm")
+        # self.ModelChain = ModelChain.with_sapm(self.solarsystem, self.pvliblocation,
+        #                              orientation_strategy="None")
 
         self.simplemultiplicationfactor = self.module_eff * self.NumPanels * self.NumStrings * self.sandia_module.A_c
 
