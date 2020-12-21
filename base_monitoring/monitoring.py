@@ -60,8 +60,14 @@ class Monitoring:
                         logging_data = logging_list[0]
                     if not data_caching:
                         if self.writerate >= 300:
-                            self.mysql_connection.connect()
-                        mysql_status = self.mysql_connection.write_dict_data(logging_data)
+                            try:
+                                self.mysql_connection.connect()
+                            except Exception:
+                                mysql_status = False
+                            else:
+                                mysql_status = self.mysql_connection.write_dict_data(logging_data)
+                        else:
+                            mysql_status = self.mysql_connection.write_dict_data(logging_data)
                         if not mysql_status:
                             data_caching = True
                             data_cache = [logging_data]
