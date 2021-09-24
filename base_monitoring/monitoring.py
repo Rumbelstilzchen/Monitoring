@@ -20,7 +20,7 @@ class Monitoring:
         self.mail_settings = mail_config
         
     def start(self):
-        max_number_cached_entries = 6
+        max_number_cached_entries = 15
         counter = 0
         logger.debug(counter)
         # logger.info(datetime.now().isoformat())
