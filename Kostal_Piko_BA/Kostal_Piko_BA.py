@@ -30,6 +30,40 @@ class Kostal_Piko_BA:
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
         self.dict_dxsID = [
+            # {167772417: 'Analog1',
+            # 167772673: 'Analog2',
+            # 167772929: 'Analog3',
+            # 167773185: 'Analog4',
+            # 33556249: 'dischargeHysteresisOn'  # minimal Watt for usage of battery
+            # 83888896: 'wintermode',
+            # 83888640: 'eps',
+            # 33556484: 'weatherForecast'
+            # 33556239: 'chargeTimeStart',
+            # 33556240: 'chargeTimeEnd',
+            # 33556236: 'maintenanceCharge',
+            # 33556231: 'minSoCManual',
+            # 33556232: 'minSoCManualInc',
+            # 33556233: 'minSoCManualIncStart',
+            # 33556234: 'minSoCManualIncEnd',
+            # 33556247: 'minSoCAutomatic',
+            # 33556248: 'minSoCDynamic',
+
+            # 33556482: 'pvModuleRegulation',
+            # 67110913: 'overvoltageProtectionAc',
+            # 117441537: 'portalCode',
+            # 117441539: 'portalExport',
+            # 201326848: 'S0Function',
+            # 201327105: 'OwnConsumpCtrlFunction',
+            # 201327113: 'DelayError',
+            # 201327106: 'DelayErrorEnable',
+            # 201327107: 'Fc1PowerThreshold',
+            # 201327108: 'Fc1ExceedTime',
+            # 201327109: 'Fc1Runtime',
+            # 201327110: 'Fc1MaxActivationsDay',
+            # 201327111: 'Fc2ThresholdOn',
+            # 201327112: 'Fc2ThresholdOff',
+            # 201327114: 'UseBattery'
+            # },
             {33556226: 'BatVoltage',
              33556238: 'BatCurrent',
              33556230: 'BatCurrentDir',
