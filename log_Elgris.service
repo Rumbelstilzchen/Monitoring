@@ -1,0 +1,18 @@
+[Unit]
+Description=Log Elgris
+Wants=network.target
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/home/pi/PythonProgs/monitoring/venv3p7/bin/python3 monitoring_template.py Elgris
+WorkingDirectory=/home/pi/PythonProgs/monitoring
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+RestartSec=30
+User=pi
+
+[Install]
+WantedBy=multi-user.target

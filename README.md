@@ -35,6 +35,8 @@ module_name can currently be any of:
   * DWD_SIM
   * Kostal_Piko_BA
   * USV
+  * Luxtronik
+  * Elgris
 
 ### Enabling services
 For each monitoring device the serivce needs to be enabled.
