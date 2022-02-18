@@ -6,7 +6,7 @@ I suggest to install a virtual environment for your monitoring purposes in order
 not to mess around with the local installations. For each monitoring there is a
 requirements*.txt which contains the necessary packages. Those can be easily installed by
 ```bash
-pip3 install requirements_USV.txt
+pip3 install -r requirements_USV.txt
 ```
 
 ### Edit config.ini
