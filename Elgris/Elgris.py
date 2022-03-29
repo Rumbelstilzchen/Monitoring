@@ -37,7 +37,7 @@ class Elgris:
             'PhVphB': ['GridVoltageL2', 0.01, 1],
             'PhVphC': ['GridVoltageL3', 0.01, 1],
             'W': ['Power_W', None],
-            'TotWhImp': ['total_Wh', None],
+            # 'TotWhImp': ['total_Wh', None],
         }
         self.average_ignores = [
             'TIMESTAMP',

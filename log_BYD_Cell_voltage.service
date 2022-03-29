@@ -1,12 +1,12 @@
 [Unit]
-Description=Log Elgris
+Description=Log BYD_Cell_voltage
 Wants=network.target
 After=network.target
 StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/home/pi/PythonProgs/monitoring/venv3p9/bin/python3 monitoring_template.py Elgris
+ExecStart=/home/pi/PythonProgs/monitoring/venv3p9/bin/python3 monitoring_template.py BYD_Cell_voltage
 WorkingDirectory=/home/pi/PythonProgs/monitoring
 StandardOutput=inherit
 StandardError=inherit

@@ -6,7 +6,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/home/pi/PythonProgs/monitoring/venv3p7/bin/python3 monitoring_template.py Kostal_Piko_BA
+ExecStart=/home/pi/PythonProgs/monitoring/venv3p9/bin/python3 monitoring_template.py Kostal_Piko_BA
 WorkingDirectory=/home/pi/PythonProgs/monitoring
 StandardOutput=inherit
 StandardError=inherit

@@ -75,7 +75,10 @@ class db_write:
     def write_dict_data(self, dictionary):
         myDict = OrderedDict(dictionary)
         if self.check_connection():
-            if isinstance(myDict['TIMESTAMP'], list):
+            time_column = 'TIMESTAMP'
+            if time_column not in myDict.keys():
+                time_column = 'time_sec'
+            if isinstance(myDict[time_column], list):
                 success_state = self.write_dict_data_multiple(myDict)
             else:
                 success_state = self.write_dict_data_single(myDict)

@@ -81,6 +81,10 @@ class DWD_SIM:
         return RH
 
     def collect_data(self):
+        """Collecting Data
+
+        :return:
+        """
         self.parse_data()
         self.average_parsed_data()
         self.add_timesec()
@@ -89,11 +93,19 @@ class DWD_SIM:
         return self.parsed_data
 
     def add_timesec(self):
+        """Add UNIX timestamp
+
+        :return:
+        """
         self.parsed_data['time_sec'] = [int(x.timestamp()) for x in self.parsed_data['TIMESTAMP']]
         self.parsed_data['TIMESTAMP'] = \
             [datetime.fromtimestamp(x, self.tz).strftime('%Y-%m-%d %H:%M:%S') for x in self.parsed_data['time_sec']]
 
     def parse_data(self):
+        """
+
+        :return:
+        """
         self.parsed_data = {'TIMESTAMP': [],
                             'Humidity': []}
         for item in self.dict_IDs.values():
@@ -103,6 +115,10 @@ class DWD_SIM:
             self.load_data(link)
 
     def average_parsed_data(self):
+        """
+
+        :return:
+        """
         temp_data = OrderedDict()
 
         # Handling the fact that not all downloaded date starts with the same timestamp - using only those stations that
@@ -122,6 +138,11 @@ class DWD_SIM:
         self.parsed_data = temp_data
 
     def load_data(self, link):
+        """Load data from link
+
+        :param str link: Provide Link
+        :return:
+        """
         temp_filename = 'tempfile_%s.zip' % self.name
         # Download the file from `url` and save it locally under `self.file_name`:
         with urllib.request.urlopen(link) as response, open(temp_filename, 'wb') as out_file:
@@ -220,7 +241,8 @@ class SIM:
                                     strings_per_inverter=self.NumStrings)
 
         self.ModelChain = ModelChain(self.solarsystem, self.pvliblocation, aoi_model="no_loss",
-                                     orientation_strategy=None, spectral_model="no_loss",
+                                     spectral_model="no_loss",
+                                     #orientation_strategy=None, spectral_model="no_loss",
                                      temperature_model="sapm")
         # self.ModelChain = ModelChain.with_sapm(self.solarsystem, self.pvliblocation,
         #                              orientation_strategy="None")

@@ -50,7 +50,10 @@ class Monitoring:
                             logging_list.append(self.data_parser.collect_data())
                         except Exception:
                             logger.exception('No Data from parser')
-                        logger.debug('\t parsed_data: %s' % self.data_parser.parsed_data['TIMESTAMP'])
+                        if 'TIMESTAMP' in self.data_parser.parsed_data.keys():
+                            logger.debug('\t parsed_data: %s' % str(self.data_parser.parsed_data['TIMESTAMP']))
+                        else:
+                            logger.debug('\t parsed_data: %s' % str(self.data_parser.parsed_data['time_sec']))
 
                 if len(logging_list) > 0:
                     unsuccessful_counter = 0
