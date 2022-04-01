@@ -31,6 +31,7 @@ Each monitoring can bee called - e.g. for testing - directly:
 ```
 module_name can currently be any of:
   * BYD
+  * BYD_Cell_voltage
   * DWD
   * DWD_SIM
   * Kostal_Piko_BA

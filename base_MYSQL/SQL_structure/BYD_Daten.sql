@@ -30,7 +30,8 @@ CREATE TABLE `BYD_Daten` (
   `MaxTempPos` int(1) DEFAULT NULL,
   `MinTempPos` int(1) DEFAULT NULL,
   PRIMARY KEY (`time_sec`),
-  UNIQUE KEY `TIMESTAMP` (`TIMESTAMP`)
+  UNIQUE KEY `TIMESTAMP` (`TIMESTAMP`),
+  UNIQUE KEY `time_sec` (`time_sec`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
