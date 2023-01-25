@@ -9,6 +9,8 @@ import logging
 # from urllib.request import urlopen
 import urllib3
 import re
+from base_monitoring.monitorin_base_class import Base_Parser
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +22,11 @@ def check_values_empty(dict_data):
     return False
 
 
-class Luxtronik:
+class Luxtronik(Base_Parser):
     name = 'Luxtronik'
 
     def __init__(self, config):
+        super().__init__()
         self.configuration = config
         self.hostHeatpump = self.configuration[self.name]['host']
         self.portHeatpump = self.configuration.getint(self.name, 'port')
@@ -36,13 +39,12 @@ class Luxtronik:
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
-        self.parsed_data = {}
         self._socket = None
         self.tasmota_regex = r"[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?"
 
         # self.IDs_all = ['?', '?', '?', '?', '?', '?', '?', '?', '?', '?', 'Temperatur_TVL', 'Temperatur_TRL', 'Sollwert_TRL_HZ', 'Temperatur_TRL_ext', 'Temperatur_THG', 'Temperatur_TA', 'Mitteltemperatur', 'Temperatur_TBW', 'Einst_BWS_akt', 'Temperatur_TWE', 'Temperatur_TWA', 'Temperatur_TFB1', 'Sollwert_TVL_MK1', 'Temperatur_RFV', 'Temperatur_TFB2', 'Sollwert_TVL_MK2', 'Temperatur_TSK', 'Temperatur_TSS', 'Temperatur_TEE', 'ASDin', 'BWTin', 'EVUin', 'HDin', 'MOTin', 'NDin', 'PEXin', 'SWTin', 'AVout', 'BUPout', 'HUPout', 'MA1out', 'MZ1out', 'VENout', 'VBOout', 'VD1out', 'VD2out', 'ZIPout', 'ZUPout', 'ZW1out', 'ZW2SSTout', 'ZW3SSTout', 'FP2out', 'SLPout', 'SUPout', 'MZ2out', 'MA2out', 'Zaehler_BetrZeitVD1', 'Zaehler_BetrZeitImpVD1', 'Zaehler_BetrZeitVD2', 'Zaehler_BetrZeitImpVD2', 'Zaehler_BetrZeitZWE1', 'Zaehler_BetrZeitZWE2', 'Zaehler_BetrZeitZWE3', 'Zaehler_BetrZeitWP', 'Zaehler_BetrZeitHz', 'Zaehler_BetrZeitBW', 'Zaehler_BetrZeitKue', 'Time_WPein_akt', 'Time_ZWE1_akt', 'Time_ZWE2_akt', 'Timer_EinschVerz', 'Time_SSPAUS_akt', 'Time_SSPEIN_akt', 'Time_VDStd_akt', 'Time_HRM_akt', 'Time_HRW_akt', 'Time_LGS_akt', 'Time_SBW_akt', 'Code_WP_akt', 'BIV_Stufe_akt', 'WP_BZ_akt', 'SoftStand1', 'SoftStand2', 'SoftStand3', 'SoftStand4', 'SoftStand5', 'SoftStand6', 'SoftStand7', 'SoftStand8', 'SoftStand9', 'SoftStand10', 'AdresseIP_akt', 'SubNetMask_akt', 'Add_Broadcast', 'Add_StdGateway', 'ERROR_Time0', 'ERROR_Time1', 'ERROR_Time2', 'ERROR_Time3', 'ERROR_Time4', 'ERROR_Nr0', 'ERROR_Nr1', 'ERROR_Nr2', 'ERROR_Nr3', 'ERROR_Nr4', 'AnzahlFehlerInSpeicher', 'Switchoff_file_Nr0', 'Switchoff_file_Nr1', 'Switchoff_file_Nr2', 'Switchoff_file_Nr3', 'Switchoff_file_Nr4', 'Switchoff_file_Time0', 'Switchoff_file_Time1', 'Switchoff_file_Time2', 'Switchoff_file_Time3', 'Switchoff_file_Time4', 'Comfort_exists', 'HauptMenuStatus_Zeile1', 'HauptMenuStatus_Zeile2', 'HauptMenuStatus_Zeile3', 'HauptMenuStatus_Zeit', 'HauptMenuAHP_Stufe', 'HauptMenuAHP_Temp', 'HauptMenuAHP_Zeit', 'SH_BWW', 'SH_HZ', 'SH_MK1', 'SH_MK2', 'Einst_Kurzprogramm', 'StatusSlave_1', 'StatusSlave_2', 'StatusSlave_3', 'StatusSlave_4', 'StatusSlave_5', 'AktuelleTimeStamp', 'SH_MK3', 'Sollwert_TVL_MK3', 'Temperatur_TFB3', 'MZ3out', 'MA3out', 'FP3out', 'Time_AbtIn', 'Temperatur_RFV2', 'Temperatur_RFV3', 'SH_SW', 'Zaehler_BetrZeitSW', 'FreigabKuehl', 'AnalogIn', 'SonderZeichen', 'SH_ZIP', 'WebsrvProgrammWerteBeobachten', 'WMZ_Heizung', 'WMZ_Brauchwasser', 'WMZ_Schwimmbad', 'WMZ_Seit', 'WMZ_Durchfluss', 'AnalogOut1', 'AnalogOut2', 'Time_Heissgas', 'Temp_Lueftung_Zuluft', 'Temp_Lueftung_Abluft', 'Zaehler_BetrZeitSolar', 'AnalogOut3', 'AnalogOut4', 'Out_VZU', 'Out_VAB', 'Out_VSK', 'Out_FRH', 'AnalogIn2', 'AnalogIn3', 'SAXin', 'SPLin', 'Compact_exists', 'Durchfluss_WQ', 'LIN_exists', 'LIN_ANSAUG_VERDAMPFER', 'LIN_ANSAUG_VERDICHTER', 'LIN_VDH', 'LIN_UH', 'LIN_UH_Soll', 'LIN_HD', 'LIN_ND', 'LIN_VDH_out', 'HZIO_PWM', 'HZIO_VEN', 'HZIO_EVU2', 'HZIO_STB', 'SEC_Qh_Soll', 'SEC_Qh_Ist', 'SEC_TVL_Soll', 'SEC_Software', 'SEC_BZ', 'SEC_VWV', 'SEC_VD', 'SEC_VerdEVI', 'SEC_AnsEVI', 'SEC_UEH_EVI', 'SEC_UEH_EVI_S', 'SEC_KondTemp', 'SEC_FlussigEx', 'SEC_UK_EEV', 'SEC_EVI_Druck', 'SEC_U_Inv', 'Temperatur_THG_2', 'Temperatur_TWE_2', 'LIN_ANSAUG_VERDAMPFER_2', 'LIN_ANSAUG_VERDICHTER_2', 'LIN_VDH_2', 'LIN_UH_2', 'LIN_UH_Soll_2', 'LIN_HD_2', 'LIN_ND_2', 'HDin_2', 'AVout_2', 'VBOout_2', 'VD1out_2', 'LIN_VDH_out_2', 'Switchoff2_Nr0', 'Switchoff2_Nr1', 'Switchoff2_Nr2', 'Switchoff2_Nr3', 'Switchoff2_Nr4', 'Switchoff2_Time0', 'Switchoff2_Time1', 'Switchoff2_Time2', 'Switchoff2_Time3', 'Switchoff2_Time4', 'RBE_RT_Ist', 'RBE_RT_Soll', 'Temp_BW_oben', 'Code_WP_akt_2', 'Freq_VD', 'LIN_Temp_ND', 'LIN_Temp_HD', 'Abtauwunsch', 'Abtauwunsch_2', 'Freq_Soll', 'Freq_Min', 'Freq_Max', 'VBO_Soll', 'VBO_Ist', 'HZUP_PWM', 'HZUP_Soll', 'HZUP_Ist', 'Temperatur_VLMax', 'Temperatur_VLMax_2', 'SEC_EVi', 'SEC_EEV', 'Time_ZWE3_akt']
 
-        self.IDs = { # id of readback: ['name in DB', Scaling factor, number of digits]
+        self.IDs = {  # id of readback: ['name in DB', Scaling factor, number of digits]
             10: ['flowTemperature', 0.1, 1],
             11: ['returnTemperature', 0.1, 1],
             12: ['returnTemperatureTarget', 0.1, 1],

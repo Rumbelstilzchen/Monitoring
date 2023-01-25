@@ -6,20 +6,20 @@ import logging
 import pytz
 from datetime import datetime
 from nut2 import PyNUTClient
+from base_monitoring.monitorin_base_class import Base_Parser
 # from retry import retry
-from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
 
-class USV:
+class USV(Base_Parser):
     name = 'USV'
 
     def __init__(self, config=None):
+        super().__init__()
         self.configuration = config
         self.timestamp = None
         self.http = None
-        self.parsed_data = OrderedDict()
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
@@ -84,14 +84,14 @@ class USV:
 
     # @staticmethod
     # def reformat_data(input_dict, dictionary):
-    #     output = OrderedDict()
+    #     output = {}
     #     for x in input_dict:
     #         output[dictionary[x['dxsId']]] = x['value']
     #     return output
 
     # @retry(tries=2, delay=0)
     def load_data(self):
-        data = OrderedDict()
+        data = {}
         self.nut._connect()
         self.timestamp = datetime.now(self.tz)
         for key in self.id_fields.keys():

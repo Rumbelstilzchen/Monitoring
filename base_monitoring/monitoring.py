@@ -4,7 +4,8 @@ import os
 import logging
 from datetime import datetime
 import time
-from collections import OrderedDict
+# import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +40,8 @@ class Monitoring:
                 logging_list = []
                 for i in range(self.samples_per_write):
                     if i == 0:
-                        waiting = (self.writerate - (datetime.now().timestamp() % self.writerate)) + self.refreshrate - 1
+                        waiting = (self.writerate - (datetime.now().timestamp() % self.writerate)) + \
+                                  self.refreshrate - 1
                         if waiting > self.writerate:
                             waiting = waiting - self.writerate
                         time.sleep(waiting)
@@ -58,7 +60,9 @@ class Monitoring:
                 if len(logging_list) > 0:
                     unsuccessful_counter = 0
                     if len(logging_list) > 1:
-                        logging_data = self.average_of_dicts(logging_list, self.data_parser.average_ignores, 6)
+                        logging_data = self.average_of_dicts(logging_list, self.data_parser.average_ignores,
+                                                             self.data_parser.suppress_zeros,
+                                                             self.data_parser.nr_of_decimal_for_round)
                     else:
                         logging_data = logging_list[0]
                     if not data_caching:
@@ -174,17 +178,28 @@ class Monitoring:
             return filename
         else:
             for key, value in errors.items():
-                print("%s: %s" %(key, value))
+                print(f"{key}: {value}")
             return None
 
     @staticmethod
-    def average_of_dicts(input_dict, list_of_ignores, decimals):
+    def average_of_dicts(input_dict, list_of_ignores, list_of_zero_suppress, decimal_dict: dict):
         # print(str(input_dict))
-        output = OrderedDict()
+        output = {}
         length = float(len(input_dict))
         for k in input_dict[0].keys():
+            if k in decimal_dict.keys():
+                decimals = decimal_dict[k]
+            else:
+                decimals = decimal_dict['default']
             if k in list_of_ignores:
                 output[k] = input_dict[-1][k]
+            elif k in list_of_zero_suppress:
+                value_list = [t[k] for t in input_dict if t[k] != 0]
+                if len(value_list) == 0:
+                    output[k] = 0
+                else:
+                    current_length = float(len(value_list))
+                    output[k] = round(sum(value_list)/current_length, decimals)
             else:
                 output[k] = round(sum(t[k] for t in input_dict) / length, decimals)
         return output

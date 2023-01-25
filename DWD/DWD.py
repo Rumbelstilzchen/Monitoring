@@ -3,7 +3,6 @@
 import logging
 import os
 from math import exp
-from collections import OrderedDict
 import pytz
 import zipfile
 import urllib.request
@@ -11,6 +10,7 @@ import shutil
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import numpy as np
+from base_monitoring.monitorin_base_class import Base_Parser
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +22,13 @@ def check_values_empty(dict_data):
     return False
 
 
-class DWD:
+class DWD(Base_Parser):
     name = 'DWD'
 
     def __init__(self, config):
+        super().__init__()
         self.configuration = config
         self.timestamp = None
-        self.parsed_data = OrderedDict()
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
@@ -91,7 +91,7 @@ class DWD:
             self.load_data(link)
 
     def average_parsed_data(self):
-        temp_data = OrderedDict()
+        temp_data = {}
 
         # Handling the fact that not all downloaded date starts with the same timestamp - using only those stations that
         # have the same common start time
@@ -154,4 +154,3 @@ class DWD:
         for index, TD in enumerate(self.parsed_data['Td'][-1]):
             Humidity_List.append(self.getHumidity(self.parsed_data['Temperature'][-1][index], TD))
         self.parsed_data['Humidity'].append(Humidity_List)
-

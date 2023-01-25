@@ -3,7 +3,6 @@
 import logging
 import os
 from math import exp
-from collections import OrderedDict
 import pytz
 import zipfile
 import urllib.request
@@ -17,6 +16,7 @@ from pvlib.pvsystem import PVSystem
 from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
+from base_monitoring.monitorin_base_class import Base_Parser
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +31,14 @@ def check_values_empty(dict_data):
 name_configsection_SIM = 'DWD_SIM_SolarSystem'
 
 
-class DWD_SIM:
+class DWD_SIM(Base_Parser):
     name = 'DWD_SIM'
 
     def __init__(self, config):
+        super().__init__()
         self.configuration = config
         self.SIM_class = SIM(config)
         self.timestamp = None
-        self.parsed_data = OrderedDict()
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
@@ -119,7 +119,7 @@ class DWD_SIM:
 
         :return:
         """
-        temp_data = OrderedDict()
+        temp_data = {}
 
         # Handling the fact that not all downloaded date starts with the same timestamp - using only those stations that
         # have the same common start time
@@ -242,7 +242,7 @@ class SIM:
 
         self.ModelChain = ModelChain(self.solarsystem, self.pvliblocation, aoi_model="no_loss",
                                      spectral_model="no_loss",
-                                     #orientation_strategy=None, spectral_model="no_loss",
+                                     # orientation_strategy=None, spectral_model="no_loss",
                                      temperature_model="sapm")
         # self.ModelChain = ModelChain.with_sapm(self.solarsystem, self.pvliblocation,
         #                              orientation_strategy="None")
@@ -335,7 +335,7 @@ def simulate_old_data():
         record = cursor.fetchall()
         names = [x[0] for x in cursor.description]
 
-    parsed_data = OrderedDict()
+    parsed_data = {}
     for index, key in enumerate(names):
         if key == 'TIMESTAMP':
             parsed_data[key] = [str(x[index]) for x in record]

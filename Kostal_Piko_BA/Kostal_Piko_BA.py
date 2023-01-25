@@ -4,9 +4,9 @@ import json
 from datetime import datetime
 import pytz
 from retry import retry
-from collections import OrderedDict
 import logging
 import urllib3
+from base_monitoring.monitorin_base_class import Base_Parser
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +18,14 @@ def check_values_empty(dict_data):
     return False
 
 
-class Kostal_Piko_BA:
+class Kostal_Piko_BA(Base_Parser):
     name = 'Kostal_Piko_BA'
 
     def __init__(self, config):
+        super().__init__()
         self.configuration = config
         self.timestamp = None
         self.http = None
-        self.parsed_data = OrderedDict()
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
@@ -118,17 +118,23 @@ class Kostal_Piko_BA:
              # 83888128: 'ownConsumption',
              16780032: 'operatingStatus'}
         ]
+        self.nr_of_decimal_for_round['BatCurrentDir'] = 0
         self.average_ignores = [
             'TIMESTAMP',
             'time_sec',
             'operatingStatus',
             'ChargeCycles',
-            'BatCurrentDir',
             'MaxVolPos',
             'MinVolPos',
             'MaxTempPos',
             'MinTempPos',
             'CycleCounts'
+        ]
+        self.suppress_zeros = [
+            'BatVoltage',
+            'BatCurrent',
+            'BatTemperature',
+            'BatStateOfCharge',
         ]
 
     def collect_data(self):
@@ -140,14 +146,14 @@ class Kostal_Piko_BA:
 
     @staticmethod
     def reformat_data(input_dict, dictionary):
-        output = OrderedDict()
+        output = {}
         for x in input_dict:
             output[dictionary[x['dxsId']]] = x['value']
         return output
 
     @retry(tries=2, delay=0)
     def load_data_fromurl(self):
-        data = OrderedDict()
+        data = {}
         base_url = "http://" + self.configuration[self.name]['IPAdresse'] + "/api/dxs.json?"
         self.timestamp = datetime.now(self.tz)
         if self.http is None:
@@ -187,7 +193,7 @@ class Kostal_Piko_BA:
             self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumptionGrid']
         elif self.parsed_data['dcPowerPV'] <= 0.001:
             self.parsed_data['AktHomeConsumptionSolar'] = 0
-            self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumptionGrid'] + \
+            self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumptionGrid'] +\
                                                      self.parsed_data['AktHomeConsumptionBat']
 
         # manchmal ist AktHomeConsumptionSolar negativ...wird hier korrigiert
@@ -214,6 +220,7 @@ class Kostal_Piko_BA:
             logger.info('Bat is loaded bey Grid - assigning loading to AktHomeConsumptionGrid/AktHomeConsumption')
             self.parsed_data['AktHomeConsumptionGrid'] = self.parsed_data['AktHomeConsumptionGrid'] + \
                                                          self.parsed_data['BatPowerLaden']
+
             self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumption'] + self.parsed_data[
                 'BatPowerLaden']
 

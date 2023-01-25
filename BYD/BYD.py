@@ -7,8 +7,9 @@ import requests
 import re
 from lxml import etree
 from retry import retry
-from collections import OrderedDict
 import logging
+from base_monitoring.monitorin_base_class import Base_Parser
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +21,16 @@ def check_values_empty(dict_data):
     return False
 
 
-class BYD:
+class BYD(Base_Parser):
     name = 'BYD'
 
     def __init__(self, config):
+        super().__init__()
         self.configuration = config
         self.timestamp = None
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
-        self.parsed_data = OrderedDict()
         self.site_struct = {
             'StatisticInformation': {'Laden_kWh': ['Total Charge Energy:', float],
                                      'EntLaden_kWh': ['Total Discharge Energy:', float],
@@ -68,7 +69,7 @@ class BYD:
 
     @retry(tries=2, delay=0)
     def load_data_fromurl(self):
-        data = OrderedDict()
+        data = {}
         my_session = requests.Session()
         authentication = HTTPBasicAuth(self.configuration[self.name]['username'],
                                        self.configuration[self.name]['password'])
@@ -89,7 +90,7 @@ class BYD:
                     # temp2 = soup_ele.find("td", text=searchstring).find_next_sibling("td").text
                     temp = xml_doc.xpath('string(//td[.="'+searchstring[0]+'"]/following-sibling::*[1][name()="td"])')
                     data[entry] = searchstring[1](
-                        re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", temp)[0]
+                        re.findall(r"[-+]? ?[.]?\d+[.]?\d*(?: ?[eE] ?[-+]?\d*)?", temp)[0]
                     )
                     # data[entry] = temp.split()[0]
             if check_values_empty(data):
@@ -105,3 +106,11 @@ class BYD:
 
 if __name__ == "__main__":
     logger.error('logger file needs to be run directly')
+    parser = BYD
+    import configparser
+
+    configuration = configparser.ConfigParser()
+    configuration.sections()
+    configuration.read(r'..\config.ini')
+    parser_init = parser(configuration)
+    parser_init.collect_data()

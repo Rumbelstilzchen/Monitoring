@@ -9,6 +9,7 @@ from lxml import etree
 from retry import retry
 from collections import OrderedDict
 import logging
+from base_monitoring.monitorin_base_class import Base_Parser
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +21,11 @@ def check_values_empty(dict_data):
     return False
 
 
-class BYD_Cell_voltage:
+class BYD_Cell_voltage(Base_Parser):
     name = 'BYD_Cell_voltage'
 
     def __init__(self, config):
+        super().__init__()
         self.configuration = config
         self.timestamp = None
         # self.time_zone = 'Europe/Berlin'
@@ -52,7 +54,6 @@ class BYD_Cell_voltage:
             }
         self.load_basicdata_fromurl()
 
-
     def collect_data(self):
         self.load_voltage_data()
         return self.parsed_data
@@ -72,12 +73,12 @@ class BYD_Cell_voltage:
                 page = page.replace('&#8451', '')
                 page = page.replace(' id="1"', '')
 
-                xml_doc = etree.HTML(page)
+                # xml_doc = etree.HTML(page)
                 # soup = BeautifulSoup(page, 'html.parser')
                 # soup_ele = soup.body
                 for entry, searchstring in value.items():
                     data[entry] = searchstring[1](
-                        re.findall(searchstring[0]+r'.*\n.*\"text_l\">(?P<val>[0-9]{1})</td', page)[0]
+                        re.findall(searchstring[0]+r'.*\n.*\"text_l\">(?P<val>[0-9])</td', page)[0]
                     )
                     # data[entry] = temp.split()[0]
             if check_values_empty(data):
@@ -86,7 +87,7 @@ class BYD_Cell_voltage:
         self.basic_data_infos = data
 
     @retry(tries=2, delay=0)
-    def load_voltage_data(self, site_struct=None):
+    def load_voltage_data(self):
         data = {'time_sec': [],
                 'Array': [],
                 'Module': [],
@@ -99,7 +100,6 @@ class BYD_Cell_voltage:
         self.timestamp = datetime.now(self.tz)
         for array_ind in range(self.basic_data_infos['Nr_Arrays']):
             for module_ind in range(self.basic_data_infos['Nr_Modules']):
-                url = "http://" + self.configuration[self.name]['IPAdresse'] + "/asp/" + self.site_with_voltage_data + ".asp"
                 url2 = "http://" + self.configuration[self.name]['IPAdresse'] + "/goform/SetRunData"
                 payload = {"ArrayNum": array_ind+1, "SeriesBatteryNum": module_ind+1}
                 r4 = requests.post(url2, auth=authentication, data=payload)
@@ -114,12 +114,12 @@ class BYD_Cell_voltage:
                     # soup = BeautifulSoup(page, 'html.parser')
                     # soup_ele = soup.body
                     for i in range(16):
-                    # for entry, searchstring in value.items():
+                        # for entry, searchstring in value.items():
                         # temp2 = soup_ele.find("td", text=searchstring).find_next_sibling("td").text
                         searchstring = f"CellVol[{i+1}]:"
                         temp = xml_doc.xpath('string(//td[.="'+searchstring+'"]/following-sibling::*[1][name()="td"])')
                         current_data = float(
-                            re.findall("[-+]?[.]?[\d]+(?:,\d\d\d)*[\.]?\d*(?:[eE][-+]?\d+)?", temp)[0]
+                            re.findall(r"[-+]? ?[.]?\d+[.]?\d*(?: ?[eE] ?[-+]?\d*)?", temp)[0]
                         )
                         data['time_sec'].append(self.timestamp.timestamp())
                         data['Array'].append(array_ind+1)
