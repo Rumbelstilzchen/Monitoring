@@ -1,0 +1,11 @@
+numpy
+# PyMySQL
+mysql-connector-python<=8.0.29
+# retry
+pytz
+pvlib >= 0.8
+scikit-learn
+shap
+matplotlib
+ipython
+wakepy
