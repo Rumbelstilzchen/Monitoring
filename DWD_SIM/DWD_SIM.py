@@ -290,13 +290,13 @@ class SIM:
         # pvlib has changed their APIs between versions ... need to deal with it ...:
         self.ModelChain.run_model(mc_weather)
 
-        parsed_data['ACSim'] = list(self.ModelChain.ac)
-        parsed_data['CellTempSim'] = list(self.ModelChain.cell_temperature)
+        parsed_data['ACSim'] = list(self.ModelChain.results.ac)
+        parsed_data['CellTempSim'] = list(self.ModelChain.results.cell_temperature)
         # modelchain provides DC data too - but no doc was found for the other values below
         # i_sc        v_oc          i_mp        v_mp         p_mp           i_x          i_xx
-        parsed_data['DCSim'] = list(self.ModelChain.dc.p_mp)
-        parsed_data['VmpSIM'] = list(self.ModelChain.dc.v_mp)
-        parsed_data['ImpSIM'] = list(self.ModelChain.dc.i_mp/self.NumStrings)
+        parsed_data['DCSim'] = list(self.ModelChain.results.dc.p_mp)
+        parsed_data['VmpSIM'] = list(self.ModelChain.results.dc.v_mp)
+        parsed_data['ImpSIM'] = list(self.ModelChain.results.dc.i_mp/self.NumStrings)
 
         parsed_data['Rad1Energy'] = list(self.simplemultiplicationfactor * PandasDF.Rad1wh)
         parsed_data['Rad1wh'] = list(PandasDF.Rad1wh)
