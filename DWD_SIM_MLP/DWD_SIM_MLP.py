@@ -78,6 +78,7 @@ class DWD_SIM_MLP(Base_Parser):
         ("cyclic_hour", periodic_spline_transformer(24, n_splines=12), ['Stunde']),
         ("cyclic_Wind_direction", periodic_spline_transformer(360, n_splines=180), ["Wind_direction"]),
     ]
+
     # input_scaler = [
     #     ("cyclic_month", Transformer(feature_range=(-1, 1)), ['Monat']),
     #     ("cyclic_hour", Transformer(feature_range=(-1, 1)), ['Stunde']),
@@ -307,7 +308,7 @@ class DWD_SIM_MLP(Base_Parser):
 
     def create_training_validation_set(self, X, Y, training_anteil=0.7):
         X_hom, Y_hom = self.homogenise_data_sets(X, Y)
-        X_train, X_test, y_train, y_test = train_test_split(X_hom, Y_hom, test_size=training_anteil)
+        X_train, X_test, y_train, y_test = train_test_split(X_hom, Y_hom, train_size=training_anteil)
         return {'X_train': X_train,
                 'y_train': y_train,
                 'X_test': X_test,
@@ -396,14 +397,18 @@ class DWD_SIM_MLP(Base_Parser):
 
     def explain_model(self):
         import shap
-        import pandas as pd
+        from shap.utils._legacy import DenseDataWithIndex
         logging.getLogger('shap').setLevel(logging.WARNING)
         input_data = self.load_trainings_data(last_NR_data_to_ignore=12 * 60 * 14)
         if input_data['X_test'].shape[0]>1000:
             input_data['X_test'] = input_data['X_test'][:1000]
         shap.initjs()
         X_train_summary = shap.kmeans(input_data['X_hom'], 50)
-        explainer = shap.KernelExplainer(self.AI_model.predict, X_train_summary)
+        X_train_summary = DenseDataWithIndex(X_train_summary.data, X_train_summary.group_names,
+                                             list(range(X_train_summary.data.shape[0])), 'index', None,
+                                             X_train_summary.weights)
+        # X_train_summary = shap.sample(input_data['X_hom'], 100)
+        explainer = shap.KernelExplainer(self.AI_model.predict, X_train_summary, keep_index=True)
         shap_values = explainer.shap_values(input_data['X_test'], nsamples=1000)
         shap.summary_plot(shap_values, input_data['X_test'], show=False)
         plt.tight_layout()
@@ -431,7 +436,7 @@ class DWD_SIM_MLP(Base_Parser):
 
         # get old_data
         with MYsqlConnection.connection.cursor() as cursor:
-            # cursor.execute(("select * FROM %s;" % configuration[parser.name]['mysql_tablename']))
+            # cursor.execute(f"select * FROM {configuration[self.name]['mysql_tablename']}")
             cursor.execute("select * FROM DWD_SIM_Daten;")
             record = cursor.fetchall()
             names = [x[0] for x in cursor.description]
