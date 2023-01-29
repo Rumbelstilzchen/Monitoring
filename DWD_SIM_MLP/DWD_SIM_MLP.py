@@ -16,6 +16,7 @@ from base_MYSQL.mysql import db_write
 from base_monitoring.monitorin_base_class import Base_Parser
 from DWD_SIM.DWD_SIM import SIM
 import pickle
+from sklearn.utils.validation import check_is_fitted, check_array, FLOAT_DTYPES
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.neural_network import MLPRegressor
@@ -23,7 +24,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.preprocessing import SplineTransformer
 # from sklearn.preprocessing import QuantileTransformer as Transformer
-from sklearn.preprocessing import MinMaxScaler as Transformer
+from sklearn.preprocessing import MinMaxScaler
 # from sklearn.preprocessing import StandardScaler as Transformer
 
 # from keras.models import Sequential
@@ -55,6 +56,35 @@ def periodic_spline_transformer(period, n_splines=None, degree=3):
     )
 
 
+class AbsMinMaxScalerClipping(MinMaxScaler):
+    def __init__(self, feature_range=(0, 1), *, copy=True, clip=False):
+        super().__init__(feature_range=feature_range, copy=copy, clip=clip)
+
+    def inverse_transform(self, X):
+        """Undo the scaling of X according to feature_range.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Input data that will be transformed. It cannot be sparse.
+
+        Returns
+        -------
+        Xt : ndarray of shape (n_samples, n_features)
+            Transformed data.
+        """
+        check_is_fitted(self)
+
+        X = check_array(
+            X, copy=self.copy, dtype=FLOAT_DTYPES, force_all_finite="allow-nan"
+        )
+
+        X -= self.min_
+        X /= self.scale_
+        X[np.where(X < 0)] = 0
+        return X
+
+
 class DWD_SIM_MLP(Base_Parser):
     name = 'DWD_SIM_MLP'
 
@@ -73,17 +103,17 @@ class DWD_SIM_MLP(Base_Parser):
         "Humidity"
     ]
 
-    input_scaler = [
-        ("cyclic_month", periodic_spline_transformer(12, n_splines=6), ['Monat']),
-        ("cyclic_hour", periodic_spline_transformer(24, n_splines=12), ['Stunde']),
-        ("cyclic_Wind_direction", periodic_spline_transformer(360, n_splines=180), ["Wind_direction"]),
-    ]
-
     # input_scaler = [
-    #     ("cyclic_month", Transformer(feature_range=(-1, 1)), ['Monat']),
-    #     ("cyclic_hour", Transformer(feature_range=(-1, 1)), ['Stunde']),
-    #     # ("cyclic_Wind_direction", periodic_spline_transformer(360, n_splines=180), ["Wind_direction"]),
+    #     ("cyclic_month", periodic_spline_transformer(12, n_splines=6), ['Monat']),
+    #     ("cyclic_hour", periodic_spline_transformer(24, n_splines=12), ['Stunde']),
+    #     ("cyclic_Wind_direction", periodic_spline_transformer(360, n_splines=180), ["Wind_direction"]),
     # ]
+
+    input_scaler = [
+        ("month", MinMaxScaler(feature_range=(-1, 1)), ['Monat']),
+        ("hour", MinMaxScaler(feature_range=(-1, 1)), ['Stunde']),
+        ("Wind_direction", MinMaxScaler(feature_range=(-1, 1)), ["Wind_direction"]),
+    ]
 
     def __init__(self, config):
         super().__init__()
@@ -130,17 +160,17 @@ class DWD_SIM_MLP(Base_Parser):
             #                              warm_start=True,
             #                              n_iter_no_change=100, early_stopping=True, validation_fraction=0.2)
             # define Model
-            model = MLPRegressor(hidden_layer_sizes=(500, 250, 100, 50), max_iter=10000000,
-                                 warm_start=True,
-                                 n_iter_no_change=500, early_stopping=True, validation_fraction=0.2)
+            model = MLPRegressor(hidden_layer_sizes=(500, 250, 100, 50), max_iter=100000,
+                                 warm_start=True, activation='relu',
+                                 n_iter_no_change=250, early_stopping=True, validation_fraction=0.2)
             # define transform
             transformer = ColumnTransformer(
                 transformers=self.input_scaler,
-                remainder=Transformer()
+                remainder=MinMaxScaler()
             )
             # define pipeline
             pipeline = Pipeline(steps=[('t', transformer), ('m', model)])
-            self.AI_model = TransformedTargetRegressor(pipeline, transformer=Transformer())
+            self.AI_model = TransformedTargetRegressor(pipeline, transformer=AbsMinMaxScalerClipping())
 
             self.train_model(update_history=True)
         # self.collect_data()
@@ -363,10 +393,10 @@ class DWD_SIM_MLP(Base_Parser):
 
         return data_dict
 
-    def train_model(self, update_history=False, plotsize=0):
+    def train_model(self, update_history=False, last_NR_data_to_ignore=10*60*14):
         new_model_found = False
         # get old_data
-        input_data = self.load_trainings_data(last_NR_data_to_ignore=12*60*14)
+        input_data = self.load_trainings_data(last_NR_data_to_ignore=last_NR_data_to_ignore)
 
         try:
             with open(self.AI_model_path, 'rb') as f:
@@ -395,12 +425,14 @@ class DWD_SIM_MLP(Base_Parser):
             # return
         return new_model_found
 
-    def explain_model(self):
+    def explain_model(self, output_dir=None):
         import shap
         from shap.utils._legacy import DenseDataWithIndex
+        if output_dir is None:
+            output_dir = self.current_directory
         logging.getLogger('shap').setLevel(logging.WARNING)
-        input_data = self.load_trainings_data(last_NR_data_to_ignore=12 * 60 * 14)
-        if input_data['X_test'].shape[0]>1000:
+        input_data = self.load_trainings_data(last_NR_data_to_ignore=0)
+        if input_data['X_test'].shape[0] > 1000:
             input_data['X_test'] = input_data['X_test'][:1000]
         shap.initjs()
         X_train_summary = shap.kmeans(input_data['X_hom'], 50)
@@ -412,12 +444,12 @@ class DWD_SIM_MLP(Base_Parser):
         shap_values = explainer.shap_values(input_data['X_test'], nsamples=1000)
         shap.summary_plot(shap_values, input_data['X_test'], show=False)
         plt.tight_layout()
-        plt.savefig(os.path.join(self.current_directory, 'Shap_Overview.png'))
+        plt.savefig(os.path.join(output_dir, 'Shap_Overview.png'))
         plt.close()
         for name in input_data['X_test'].columns.to_list():
             shap.dependence_plot(name, shap_values, input_data['X_test'], show=False)
             plt.tight_layout()
-            plt.savefig(os.path.join(self.current_directory, f'Shap_Overview_{name}.png'))
+            plt.savefig(os.path.join(output_dir, f'Shap_Overview_{name}.png'))
             plt.close()
 
     def simulate_old_data(self):
@@ -459,6 +491,8 @@ if __name__ == "__main__":
     from base_logging.base_logging import set_stream_logger
     import matplotlib.pyplot as plt
 
+    start_time = datetime.now(tz=pytz.timezone('Europe/Berlin'))
+
     set_stream_logger()
     logger.info('Test')
     logging.getLogger('base_MYSQL.mysql').setLevel(logging.WARNING)
@@ -472,29 +506,37 @@ if __name__ == "__main__":
     try:
         parser_init = DWD_SIM_MLP(configuration)
 
+        outdir = os.path.join(parser_init.current_directory, 'Model_History', start_time.strftime('%Y-%m-%d'))
+
         update_history_flag = False
-        for i in range(1):
+        for i in range(100):
             logger.info(f'{i+1} th run:')
             if parser_init.train_model(update_history=True):
+                os.makedirs(outdir, exist_ok=True)
                 update_history_flag = True
+
+                max_display = 7
+                plt.figure(figsize=(1.5 * max_display + 1, 0.8 * max_display + 1))
+                plt.plot(parser_init.AI_model.regressor_.steps[1][1].validation_scores_)
+                plt.hlines(parser_init.AI_model.regressor_.steps[1][1].best_validation_score_, 0,
+                           len(parser_init.AI_model.regressor_.steps[1][1].validation_scores_), colors='green')
+                plt.vlines(
+                    len(parser_init.AI_model.regressor_.steps[1][1].validation_scores_) -
+                    parser_init.AI_model.regressor_.steps[1][1].n_iter_no_change - 2,
+                    0, 1, colors='green')
+                plt.ylim([0.5, 1])
+                plt.xlabel('Iteration')
+                plt.ylabel('Score')
+                plt.tight_layout()
+                plt.savefig(os.path.join(outdir, 'ScoreCurve_Best_Fit.png'))
+                plt.close()
         if update_history_flag:
-            parser_init.simulate_old_data()
-            max_display = 7
-            plt.figure(figsize=(1.5 * max_display + 1, 0.8 * max_display + 1))
-            plt.plot(parser_init.AI_model.regressor_.steps[1][1].validation_scores_)
-            plt.hlines(parser_init.AI_model.regressor_.steps[1][1].best_validation_score_, 0,
-                       len(parser_init.AI_model.regressor_.steps[1][1].validation_scores_), colors='green')
-            plt.vlines(
-                len(parser_init.AI_model.regressor_.steps[1][1].validation_scores_) -
-                parser_init.AI_model.regressor_.steps[1][1].n_iter_no_change - 2,
-                0, 1, colors='green')
-            plt.ylim([0.5, 1])
-            plt.xlabel('Iteration')
-            plt.ylabel('Score')
-            plt.tight_layout()
-            plt.savefig(os.path.join(parser_init.current_directory, 'ScoreCurve_Best_Fit.png'))
-            plt.close()
-            parser_init.explain_model()
+            from shutil import copyfile
+            copyfile(os.path.join(parser_init.current_directory, 'MLP_model.bin'),
+                     os.path.join(outdir, 'MLP_model.bin'))
+            copyfile(os.path.join(parser_init.current_directory, 'DWD_SIM_MLP.py'),
+                     os.path.join(outdir, 'DWD_SIM_MLP.py'))
+            parser_init.explain_model(outdir)
     except Exception:
         logger.exception('Error at main')
     finally:
