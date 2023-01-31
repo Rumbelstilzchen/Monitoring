@@ -23,6 +23,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.compose import ColumnTransformer
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.preprocessing import SplineTransformer
+from sklearn.preprocessing import FunctionTransformer
 # from sklearn.preprocessing import QuantileTransformer as Transformer
 from sklearn.preprocessing import MinMaxScaler
 # from sklearn.preprocessing import StandardScaler as Transformer
@@ -81,8 +82,68 @@ class AbsMinMaxScalerClipping(MinMaxScaler):
 
         X -= self.min_
         X /= self.scale_
-        X[np.where(X < 0)] = 0
+        if np.any(X < 0):
+            logger.warning('values <0 found: clipping to zero')
+            X[np.where(X < 0)] = 0
         return X
+
+def month_sin(X):
+    return np.sin(X / 12 * np.pi)
+def hour_sin(X):
+    return np.sin(X / 24 * np.pi)
+
+
+
+def output_scaler(x):
+    return x / 8500
+
+def output_scaler_inverse(x):
+    if np.any(x < 0):
+        logger.warning(f'values <0 found {np.sum(x < 0)*100/x.shape[0]:.1f}% of times: clipping to zero')
+        x[np.where(x < 0)] = 0
+    if np.any(x >= 10000):
+        logger.warning(f'values >=10000 found {np.sum(x >= 10000)*100/x.shape[0]:.1f}% of times: clipping to 9999.9')
+        x[np.where(x >= 10000)] = 9999.9
+    return x * 8500
+
+
+def angle_sin(X):
+    return (np.sin(X / 180 * np.pi) + 1) / 2
+
+
+def angle_asin(X):
+    return np.arcsin(X * 2 - 1) * 180 / np.pi
+
+
+sin_transformer = FunctionTransformer(func=angle_sin, inverse_func=angle_asin, check_inverse=False)
+
+def angle_cos(X):
+    return (np.cos(X / 180*np.pi) + 1) / 2
+
+
+def angle_acos(X):
+    return np.arccos(X * 2 - 1) * 180 / np.pi
+
+
+cos_transformer = FunctionTransformer(func=angle_sin, inverse_func=angle_asin, check_inverse=False)
+
+
+def output_log(x):
+    return np.log1p(x)
+
+
+def output_exp(x):
+    x = np.exp(x) - 1
+    if np.any(x < 0):
+        logger.warning('values <0 found: clipping to zero')
+        x[np.where(x < 0)] = 0
+    if np.any(np.isnan(x)):
+        logger.warning('NaN values found: clipping to zero')
+    x[np.where(np.isnan(x))] = 0
+    return x
+
+
+log_transformer = FunctionTransformer(func=output_log, inverse_func=output_exp, validate=True)
 
 
 class DWD_SIM_MLP(Base_Parser):
@@ -110,9 +171,13 @@ class DWD_SIM_MLP(Base_Parser):
     # ]
 
     input_scaler = [
-        ("month", MinMaxScaler(feature_range=(-1, 1)), ['Monat']),
-        ("hour", MinMaxScaler(feature_range=(-1, 1)), ['Stunde']),
-        ("Wind_direction", MinMaxScaler(feature_range=(-1, 1)), ["Wind_direction"]),
+        # ("month", MinMaxScaler(feature_range=(-1, 1)), ['Monat']),
+        ("month", FunctionTransformer(func=month_sin), ['Monat']),
+        # ("hour", MinMaxScaler(feature_range=(-1, 1)), ['Stunde']),
+        ("hour", FunctionTransformer(func=hour_sin), ['Stunde']),
+        ("cos_Wind_direction", cos_transformer, ["Wind_direction"]),
+        ("sin_Wind_direction", sin_transformer, ["Wind_direction"]),
+        # ("Wind_direction", MinMaxScaler(feature_range=(-1, 1)), ["Wind_direction"]),
     ]
 
     def __init__(self, config):
@@ -160,17 +225,21 @@ class DWD_SIM_MLP(Base_Parser):
             #                              warm_start=True,
             #                              n_iter_no_change=100, early_stopping=True, validation_fraction=0.2)
             # define Model
-            model = MLPRegressor(hidden_layer_sizes=(500, 250, 100, 50), max_iter=100000,
-                                 warm_start=True, activation='relu',
-                                 n_iter_no_change=250, early_stopping=True, validation_fraction=0.2)
+            regressor = MLPRegressor(hidden_layer_sizes=(500, 250, 100, 50), max_iter=100000,
+                                     warm_start=True,
+                                     n_iter_no_change=250, early_stopping=True, validation_fraction=0.2)
+            # t_regressor = TransformedTargetRegressor(regressor, transformer=AbsMinMaxScalerClipping())
+            t_regressor = TransformedTargetRegressor(
+                regressor,
+                transformer=FunctionTransformer(func=output_scaler, inverse_func=output_scaler_inverse))
             # define transform
             transformer = ColumnTransformer(
                 transformers=self.input_scaler,
                 remainder=MinMaxScaler()
             )
             # define pipeline
-            pipeline = Pipeline(steps=[('t', transformer), ('m', model)])
-            self.AI_model = TransformedTargetRegressor(pipeline, transformer=AbsMinMaxScalerClipping())
+            self.AI_model = Pipeline(steps=[('t', transformer), ('m', t_regressor)])
+            # stacked_output_transformer = Pipeline(steps=[('1st', log_transformer), ('2nd', MinMaxScaler())])
 
             self.train_model(update_history=True)
         # self.collect_data()
@@ -354,6 +423,7 @@ class DWD_SIM_MLP(Base_Parser):
             'mysql_pw': self.configuration[self.name]['mysql_pw'],
             'mysql_DB': self.configuration[self.name]['mysql_DB'],
             'mysql_table': self.configuration[self.name]['mysql_tablename'],
+            # 'mysql_table': 'DWD_SIM_Daten',
             'time_zone': self.time_zone,
         }
         if 'mysql_type' in self.configuration[self.name].keys():
@@ -517,12 +587,12 @@ if __name__ == "__main__":
 
                 max_display = 7
                 plt.figure(figsize=(1.5 * max_display + 1, 0.8 * max_display + 1))
-                plt.plot(parser_init.AI_model.regressor_.steps[1][1].validation_scores_)
-                plt.hlines(parser_init.AI_model.regressor_.steps[1][1].best_validation_score_, 0,
-                           len(parser_init.AI_model.regressor_.steps[1][1].validation_scores_), colors='green')
+                plt.plot(parser_init.AI_model.steps[1][1].regressor_.validation_scores_)
+                plt.hlines(parser_init.AI_model.steps[1][1].regressor_.best_validation_score_, 0,
+                           len(parser_init.AI_model.steps[1][1].regressor_.validation_scores_), colors='green')
                 plt.vlines(
-                    len(parser_init.AI_model.regressor_.steps[1][1].validation_scores_) -
-                    parser_init.AI_model.regressor_.steps[1][1].n_iter_no_change - 2,
+                    len(parser_init.AI_model.steps[1][1].regressor_.validation_scores_) -
+                    parser_init.AI_model.steps[1][1].regressor_.n_iter_no_change - 2,
                     0, 1, colors='green')
                 plt.ylim([0.5, 1])
                 plt.xlabel('Iteration')
