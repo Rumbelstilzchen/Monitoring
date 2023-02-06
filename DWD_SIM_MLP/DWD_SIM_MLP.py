@@ -16,20 +16,16 @@ from base_MYSQL.mysql import db_write
 from base_monitoring.monitorin_base_class import Base_Parser
 from DWD_SIM.DWD_SIM import SIM
 import pickle
-from sklearn.utils.validation import check_is_fitted, check_array, FLOAT_DTYPES
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.neural_network import MLPRegressor
+from sklearn.neural_network._multilayer_perceptron import _STOCHASTIC_SOLVERS
+from sklearn.neural_network._base import LOSS_FUNCTIONS, DERIVATIVES
+from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.compose import ColumnTransformer
 from sklearn.compose import TransformedTargetRegressor
-from sklearn.preprocessing import SplineTransformer
 from sklearn.preprocessing import FunctionTransformer
-# from sklearn.preprocessing import QuantileTransformer as Transformer
 from sklearn.preprocessing import MinMaxScaler
-# from sklearn.preprocessing import StandardScaler as Transformer
-
-# from keras.models import Sequential
-# from keras.layers import Dense,  InputLayer
 
 logger = logging.getLogger(__name__)
 
@@ -44,88 +40,225 @@ def check_values_empty(dict_data):
 name_configsection_SIM = 'DWD_SIM_SolarSystem'
 
 
-def periodic_spline_transformer(period, n_splines=None, degree=3):
-    if n_splines is None:
-        n_splines = period
-    n_knots = n_splines + 1  # periodic and include_bias is True
-    return SplineTransformer(
-        degree=degree,
-        n_knots=n_knots,
-        knots=np.linspace(0, period, n_knots).reshape(n_knots, 1),
-        extrapolation="periodic",
-        include_bias=True,
-    )
+def relative_abs_loss(y_true, y_pred):
+    """Compute the squared loss for regression.
+
+    Parameters
+    ----------
+    y_true : array-like or label indicator matrix
+        Ground truth (correct) values.
+
+    y_pred : array-like or label indicator matrix
+        Predicted values, as returned by a regression estimator.
+
+    Returns
+    -------
+    loss : float
+        The degree to which the samples are correctly predicted.
+    """
+    return np.abs(1 - y_pred/y_true).mean()
 
 
-class AbsMinMaxScalerClipping(MinMaxScaler):
-    def __init__(self, feature_range=(0, 1), *, copy=True, clip=False):
-        super().__init__(feature_range=feature_range, copy=copy, clip=clip)
+LOSS_FUNCTIONS['relative'] = relative_abs_loss
 
-    def inverse_transform(self, X):
-        """Undo the scaling of X according to feature_range.
+
+class myMLPRegressor(MLPRegressor):
+    def __init__(
+        self,
+        hidden_layer_sizes=(100,),
+        activation="relu",
+        *,
+        solver="adam",
+        alpha=0.0001,
+        batch_size="auto",
+        learning_rate="constant",
+        learning_rate_init=0.001,
+        power_t=0.5,
+        max_iter=200,
+        shuffle=True,
+        random_state=None,
+        tol=1e-4,
+        verbose=False,
+        warm_start=False,
+        momentum=0.9,
+        nesterovs_momentum=True,
+        early_stopping=False,
+        validation_fraction=0.1,
+        beta_1=0.9,
+        beta_2=0.999,
+        epsilon=1e-8,
+        n_iter_no_change=10,
+        max_fun=15000,
+    ):
+        super().__init__(hidden_layer_sizes=hidden_layer_sizes,
+                         activation=activation,
+                         solver=solver,
+                         alpha=alpha,
+                         batch_size=batch_size,
+                         learning_rate=learning_rate,
+                         learning_rate_init=learning_rate_init,
+                         power_t=power_t,
+                         max_iter=max_iter,
+                         shuffle=shuffle,
+                         random_state=random_state,
+                         tol=tol,
+                         verbose=verbose,
+                         warm_start=warm_start,
+                         momentum=momentum,
+                         nesterovs_momentum=nesterovs_momentum,
+                         early_stopping=early_stopping,
+                         validation_fraction=validation_fraction,
+                         beta_1=beta_1,
+                         beta_2=beta_2,
+                         epsilon=epsilon,
+                         n_iter_no_change=n_iter_no_change,
+                         max_fun=max_fun,)
+        self.out_activation_ = 'logistic'
+        self.loss = 'relative'
+
+    def _initialize(self, y, layer_units, dtype):
+        # set all attributes, allocate weights etc. for first call
+        # Initialize parameters
+        self.n_iter_ = 0
+        self.t_ = 0
+        self.n_outputs_ = y.shape[1]
+
+        # Compute the number of layers
+        self.n_layers_ = len(layer_units)
+
+        # Initialize coefficient and intercept layers
+        self.coefs_ = []
+        self.intercepts_ = []
+
+        for ith in range(self.n_layers_ - 1):
+            coef_init, intercept_init = self._init_coef(
+                layer_units[ith], layer_units[ith + 1], dtype
+            )
+            self.coefs_.append(coef_init)
+            self.intercepts_.append(intercept_init)
+
+        if self.solver in _STOCHASTIC_SOLVERS:
+            self.loss_curve_ = []
+            self._no_improvement_count = 0
+            if self.early_stopping:
+                self.validation_scores_ = []
+                self.best_validation_score_ = -np.inf
+                self.best_loss_ = None
+            else:
+                self.best_loss_ = np.inf
+                self.validation_scores_ = None
+                self.best_validation_score_ = None
+
+    def _backprop(self, X, y, activations, deltas, coef_grads, intercept_grads):
+        """Compute the MLP loss function and its corresponding derivatives
+        with respect to each parameter: weights and bias vectors.
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            Input data that will be transformed. It cannot be sparse.
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            The input data.
+
+        y : ndarray of shape (n_samples,)
+            The target values.
+
+        activations : list, length = n_layers - 1
+             The ith element of the list holds the values of the ith layer.
+
+        deltas : list, length = n_layers - 1
+            The ith element of the list holds the difference between the
+            activations of the i + 1 layer and the backpropagated error.
+            More specifically, deltas are gradients of loss with respect to z
+            in each layer, where z = wx + b is the value of a particular layer
+            before passing through the activation function
+
+        coef_grads : list, length = n_layers - 1
+            The ith element contains the amount of change used to update the
+            coefficient parameters of the ith layer in an iteration.
+
+        intercept_grads : list, length = n_layers - 1
+            The ith element contains the amount of change used to update the
+            intercept parameters of the ith layer in an iteration.
 
         Returns
         -------
-        Xt : ndarray of shape (n_samples, n_features)
-            Transformed data.
+        loss : float
+        coef_grads : list, length = n_layers - 1
+        intercept_grads : list, length = n_layers - 1
         """
-        check_is_fitted(self)
+        n_samples = X.shape[0]
 
-        X = check_array(
-            X, copy=self.copy, dtype=FLOAT_DTYPES, force_all_finite="allow-nan"
+        # Forward propagate
+        activations = self._forward_pass(activations)
+
+        # Get loss
+        loss_func_name = self.loss
+        if loss_func_name == "log_loss" and self.out_activation_ == "logistic":
+            loss_func_name = "binary_log_loss"
+        loss = LOSS_FUNCTIONS[loss_func_name](y, activations[-1])
+        # print(f'sqr {squared_loss(y,activations[-1])}\trel {loss}')
+        # Add L2 regularization term to loss
+        values = 0
+        for s in self.coefs_:
+            s = s.ravel()
+            values += np.dot(s, s)
+        loss += (0.5 * self.alpha) * values / n_samples
+
+        # Backward propagate
+        last = self.n_layers_ - 2
+
+        # The calculation of delta[last] here works with following
+        # combinations of output activation and loss function:
+        # sigmoid and binary cross entropy, softmax and categorical cross
+        # entropy, and identity with squared loss
+        deltas[last] = activations[-1] - y
+
+        # Compute gradient for the last layer
+        self._compute_loss_grad(
+            last, n_samples, activations, deltas, coef_grads, intercept_grads
         )
 
-        X -= self.min_
-        X /= self.scale_
-        if np.any(X < 0):
-            logger.warning('values <0 found: clipping to zero')
-            X[np.where(X < 0)] = 0
-        return X
+        inplace_derivative = DERIVATIVES[self.activation]
+        # Iterate over the hidden layers
+        for ind in range(self.n_layers_ - 2, 0, -1):
+            deltas[ind - 1] = safe_sparse_dot(deltas[ind], self.coefs_[ind].T)
+            inplace_derivative(activations[ind], deltas[ind - 1])
 
-def month_sin(X):
-    return np.sin(X / 12 * np.pi)
-def hour_sin(X):
-    return np.sin(X / 24 * np.pi)
+            self._compute_loss_grad(
+                ind - 1, n_samples, activations, deltas, coef_grads, intercept_grads
+            )
+
+        return loss, coef_grads, intercept_grads
 
 
+def lin_scaler(x, min_x=0, max_x=8500):
+    return (x-min_x) / (max_x-min_x)
 
-def output_scaler(x):
-    return x / 8500
 
-def output_scaler_inverse(x):
-    if np.any(x < 0):
+def lin_scaler_inverse(x, min_x=0, max_x=8500, output_check=False):
+    x = x * (max_x-min_x) + min_x
+    if np.any(x < 0) and output_check:
         logger.warning(f'values <0 found {np.sum(x < 0)*100/x.shape[0]:.1f}% of times: clipping to zero')
         x[np.where(x < 0)] = 0
-    if np.any(x >= 10000):
+    if np.any(x >= 10000) and output_check:
         logger.warning(f'values >=10000 found {np.sum(x >= 10000)*100/x.shape[0]:.1f}% of times: clipping to 9999.9')
         x[np.where(x >= 10000)] = 9999.9
-    return x * 8500
+    return x
 
 
-def angle_sin(X):
-    return (np.sin(X / 180 * np.pi) + 1) / 2
+def sin(X, period=360):
+    return np.sin(X / period * 2 * np.pi)
 
 
-def angle_asin(X):
-    return np.arcsin(X * 2 - 1) * 180 / np.pi
+def asin(X, period=360):
+    return np.arcsin(X) * period / 2 / np.pi
 
 
-sin_transformer = FunctionTransformer(func=angle_sin, inverse_func=angle_asin, check_inverse=False)
-
-def angle_cos(X):
-    return (np.cos(X / 180*np.pi) + 1) / 2
+def cos(X, period=360):
+    return np.cos(X / period * 2 * np.pi)
 
 
-def angle_acos(X):
-    return np.arccos(X * 2 - 1) * 180 / np.pi
-
-
-cos_transformer = FunctionTransformer(func=angle_sin, inverse_func=angle_asin, check_inverse=False)
+def acos(X, period=360):
+    return np.arccos(X) * period / 2 / np.pi
 
 
 def output_log(x):
@@ -141,9 +274,6 @@ def output_exp(x):
         logger.warning('NaN values found: clipping to zero')
     x[np.where(np.isnan(x))] = 0
     return x
-
-
-log_transformer = FunctionTransformer(func=output_log, inverse_func=output_exp, validate=True)
 
 
 class DWD_SIM_MLP(Base_Parser):
@@ -164,19 +294,14 @@ class DWD_SIM_MLP(Base_Parser):
         "Humidity"
     ]
 
-    # input_scaler = [
-    #     ("cyclic_month", periodic_spline_transformer(12, n_splines=6), ['Monat']),
-    #     ("cyclic_hour", periodic_spline_transformer(24, n_splines=12), ['Stunde']),
-    #     ("cyclic_Wind_direction", periodic_spline_transformer(360, n_splines=180), ["Wind_direction"]),
-    # ]
-
     input_scaler = [
-        # ("month", MinMaxScaler(feature_range=(-1, 1)), ['Monat']),
-        ("month", FunctionTransformer(func=month_sin), ['Monat']),
-        # ("hour", MinMaxScaler(feature_range=(-1, 1)), ['Stunde']),
-        ("hour", FunctionTransformer(func=hour_sin), ['Stunde']),
-        ("cos_Wind_direction", cos_transformer, ["Wind_direction"]),
-        ("sin_Wind_direction", sin_transformer, ["Wind_direction"]),
+        ("Jahr", FunctionTransformer(func=lin_scaler, kw_args={'min_x': 2019, 'max_x': 2048}), ['Jahr']),
+        ("sin_month", FunctionTransformer(func=sin, kw_args={'period': 12}), ['Monat']),
+        ("cos_month", FunctionTransformer(func=cos, kw_args={'period': 12}), ['Monat']),
+        ("sin_hour", FunctionTransformer(func=sin, kw_args={'period': 24}), ['Stunde']),
+        ("cos_hour", FunctionTransformer(func=cos, kw_args={'period': 24}), ['Stunde']),
+        ("cos_Wind_direction", FunctionTransformer(func=cos, kw_args={'period': 360}), ["Wind_direction"]),
+        ("sin_Wind_direction", FunctionTransformer(func=sin, kw_args={'period': 360}), ["Wind_direction"]),
         # ("Wind_direction", MinMaxScaler(feature_range=(-1, 1)), ["Wind_direction"]),
     ]
 
@@ -221,17 +346,16 @@ class DWD_SIM_MLP(Base_Parser):
                 self.AI_model = pickle.load(file)
         except Exception:
             logger.exception('No Old Model found - initializing new one')
-            # self.AI_model = MLPRegressor(hidden_layer_sizes=(500, 500, 100, 100, 50), max_iter=10000000,
-            #                              warm_start=True,
-            #                              n_iter_no_change=100, early_stopping=True, validation_fraction=0.2)
-            # define Model
-            regressor = MLPRegressor(hidden_layer_sizes=(500, 250, 100, 50), max_iter=100000,
-                                     warm_start=True,
-                                     n_iter_no_change=250, early_stopping=True, validation_fraction=0.2)
-            # t_regressor = TransformedTargetRegressor(regressor, transformer=AbsMinMaxScalerClipping())
+
+            regressor = myMLPRegressor(hidden_layer_sizes=(500, 250, 100, 50), max_iter=100000,
+                                       warm_start=True,  # batch_size=10000,
+                                       n_iter_no_change=250, early_stopping=True, validation_fraction=0.2)
+
             t_regressor = TransformedTargetRegressor(
                 regressor,
-                transformer=FunctionTransformer(func=output_scaler, inverse_func=output_scaler_inverse))
+                transformer=FunctionTransformer(func=lin_scaler, kw_args={'max_x': 8500},
+                                                inverse_func=lin_scaler_inverse,
+                                                inv_kw_args={'max_x': 8500, 'output_check': True}))
             # define transform
             transformer = ColumnTransformer(
                 transformers=self.input_scaler,
@@ -576,7 +700,7 @@ if __name__ == "__main__":
     try:
         parser_init = DWD_SIM_MLP(configuration)
 
-        outdir = os.path.join(parser_init.current_directory, 'Model_History', start_time.strftime('%Y-%m-%d'))
+        outdir = os.path.join(parser_init.current_directory, 'Model_History', start_time.strftime('%Y-%m-%d_%H'))
 
         update_history_flag = False
         for i in range(100):
@@ -586,20 +710,59 @@ if __name__ == "__main__":
                 update_history_flag = True
 
                 max_display = 7
-                plt.figure(figsize=(1.5 * max_display + 1, 0.8 * max_display + 1))
-                plt.plot(parser_init.AI_model.steps[1][1].regressor_.validation_scores_)
-                plt.hlines(parser_init.AI_model.steps[1][1].regressor_.best_validation_score_, 0,
-                           len(parser_init.AI_model.steps[1][1].regressor_.validation_scores_), colors='green')
-                plt.vlines(
-                    len(parser_init.AI_model.steps[1][1].regressor_.validation_scores_) -
-                    parser_init.AI_model.steps[1][1].regressor_.n_iter_no_change - 2,
-                    0, 1, colors='green')
-                plt.ylim([0.5, 1])
-                plt.xlabel('Iteration')
-                plt.ylabel('Score')
-                plt.tight_layout()
-                plt.savefig(os.path.join(outdir, 'ScoreCurve_Best_Fit.png'))
+                # plt.figure(figsize=(1.5 * max_display + 1, 0.8 * max_display + 1))
+                fig, ax = plt.subplots(figsize=(1.5 * max_display + 1, 0.8 * max_display + 1))
+                ax.plot(parser_init.AI_model.steps[1][1].regressor_.validation_scores_, label='Score (Validation)')
+                ax.hlines(parser_init.AI_model.steps[1][1].regressor_.best_validation_score_, 0,
+                          len(parser_init.AI_model.steps[1][1].regressor_.validation_scores_), colors='red')
+                ax.vlines(len(parser_init.AI_model.steps[1][1].regressor_.validation_scores_) -
+                          parser_init.AI_model.steps[1][1].regressor_.n_iter_no_change - 2,
+                          0, 1, colors='red')
+                ax.set_ylim(0.5, 1)
+                ax.grid()
+                ax.set_xlabel('Iteration')
+                ax.set_ylabel('Score')
+                ax2 = ax.twinx()
+                ax2.plot(np.array(parser_init.AI_model.steps[1][1].regressor_.loss_curve_) * 100, color='green',
+                         label='Loss (test)')
+                ax2.set_ylabel('Loss')
+                ax2.set_ylim(0, 100)
+                # ax.legend(['Score (Validation)'])
+                # ax2.legend(['Loss (test)'])
+                fig.legend()
+                fig.tight_layout()
+                fig.savefig(os.path.join(outdir, 'ScoreCurve_Best_Fit.png'))
                 plt.close()
+
+                loss_score = np.array((parser_init.AI_model.steps[1][1].regressor_.loss_curve_,
+                                       parser_init.AI_model.steps[1][1].regressor_.validation_scores_,
+                                       np.arange(len(parser_init.AI_model.steps[1][1].regressor_.loss_curve_))),
+                                      dtype=float).T
+                best_loss = loss_score[np.where(
+                    loss_score[:, 1] == parser_init.AI_model.steps[1][1].regressor_.best_validation_score_)][0]
+                loss_score = loss_score[np.where(loss_score[:, 0] < 2)]
+                loss_score2 = loss_score[np.where(loss_score[:, 0] < 1)]
+                plt.figure(figsize=(1.5 * max_display + 1, 0.8 * max_display + 1))
+                plt.subplot(121)
+                plt.scatter(loss_score[:, 0] * 100, loss_score[:, 1], c=loss_score[:, 2], marker='.', s=0.5)
+                plt.scatter(best_loss[0] * 100, best_loss[1], marker='x', c='red', s=10)
+                plt.grid()
+                cbar = plt.colorbar()
+                cbar.set_label('Iteration', rotation=270)
+                plt.xlabel('Train Loss')
+                plt.ylabel('Val Score')
+                plt.subplot(122)
+                plt.scatter(loss_score2[:, 0] * 100, loss_score2[:, 1], c=loss_score2[:, 2], marker='.', s=0.5)
+                plt.scatter(best_loss[0] * 100, best_loss[1], marker='x', c='red', s=10)
+                plt.grid()
+                cbar = plt.colorbar()
+                cbar.set_label('Iteration', rotation=270)
+                # plt.ylim(0.7, 1)
+                plt.xlabel('Train Loss')
+                plt.ylabel('Val Score')
+                plt.savefig(os.path.join(outdir, 'Score_LossCurve_Best_Fit.png'))
+                plt.close()
+
         if update_history_flag:
             from shutil import copyfile
             copyfile(os.path.join(parser_init.current_directory, 'MLP_model.bin'),
