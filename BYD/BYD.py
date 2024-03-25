@@ -76,7 +76,7 @@ class BYD(Base_Parser):
         self.timestamp = datetime.now(self.tz)
         for key, value in self.site_struct.items():
             url = "http://" + self.configuration[self.name]['IPAdresse'] + "/asp/" + key + ".asp"
-            r4 = my_session.get(url, auth=authentication)
+            r4 = my_session.get(url, auth=authentication, timeout=10)
             if r4.status_code == 200:
                 page = r4.text
                 page = page.replace('><input readonly="readonly" type="text" value=', '>')

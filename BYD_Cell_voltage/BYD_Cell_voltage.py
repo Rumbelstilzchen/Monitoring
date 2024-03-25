@@ -66,7 +66,7 @@ class BYD_Cell_voltage(Base_Parser):
                                        self.configuration[self.name]['password'])
         for key, value in self.base_site_struct.items():
             url = "http://" + self.configuration[self.name]['IPAdresse'] + "/asp/" + key + ".asp"
-            r4 = my_session.get(url, auth=authentication)
+            r4 = my_session.get(url, auth=authentication, timeout=10)
             if r4.status_code == 200:
                 page = r4.text
                 page = page.replace('><input readonly="readonly" type="text" value=', '>')
