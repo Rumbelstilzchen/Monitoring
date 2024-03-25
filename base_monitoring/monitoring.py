@@ -4,23 +4,44 @@ import os
 import logging
 from datetime import datetime
 import time
+import signal
 # import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
 class Monitoring:
-    
+    running = False
+
     def __init__(self, refreshrate, writerate, data_parser=None, mysql_connection=None, mail_config=None):
-        self.refreshrate = refreshrate
+        # self.refreshrate = refreshrate
         self.writerate = writerate
         self.samples_per_write = int(writerate/refreshrate)
         self.refreshrate = self.writerate/self.samples_per_write
         self.mysql_connection = mysql_connection
         self.data_parser = data_parser
         self.mail_settings = mail_config
+        self.loop_finished = False
+
+    def exit_monitoring(self, reasoncode=None, properties=None):
+        logger.info(f'{reasoncode}')
+        logger.info(f'{properties}')
+        self.running = False
+        logger.info('Exiting - Running set to false')
+        time_counter = 0
+        while not self.loop_finished and time_counter < 30:
+            time_counter += 2
+            time.sleep(2)
+        logger.info('Exiting - Running finished')
+        self.data_parser.exit_parser()
+        if self.mail_settings is not None:
+            successfully_attached_file = self.send_mail()
+            if successfully_attached_file is not None:
+                os.remove(successfully_attached_file)
         
     def start(self):
+        signal.signal(signal.SIGTERM, self.exit_monitoring)
+        self.running = True
         max_number_cached_entries = 15
         counter = 0
         logger.debug(counter)
@@ -36,9 +57,12 @@ class Monitoring:
         data_cache = []
         unsuccessful_counter = 0
         try:
-            while True:
+            while self.running:
                 logging_list = []
                 for i in range(self.samples_per_write):
+                    if not self.running:
+                        logger.info("Inner loop - aborted")
+                        break
                     if i == 0:
                         waiting = (self.writerate - (datetime.now().timestamp() % self.writerate)) + \
                                   self.refreshrate - 1
@@ -57,6 +81,9 @@ class Monitoring:
                         else:
                             logger.debug('\t parsed_data: %s' % str(self.data_parser.parsed_data['time_sec']))
 
+                if not self.running:
+                    logger.info("while loop - aborted")
+                    break
                 if len(logging_list) > 0:
                     unsuccessful_counter = 0
                     if len(logging_list) > 1:
@@ -65,7 +92,7 @@ class Monitoring:
                                                              self.data_parser.nr_of_decimal_for_round)
                     else:
                         logging_data = logging_list[0]
-                    if not data_caching:
+                    if not data_caching and self.mysql_connection is not None:
                         if self.writerate >= 300:
                             try:
                                 self.mysql_connection.connect()
@@ -86,7 +113,7 @@ class Monitoring:
                             self.mysql_connection.close()
                         # else:
                         #     logger.info('\tMYSQL: %s' % logging_data['TIMESTAMP'])
-                    elif mysql_status_counter == max_number_cached_entries:
+                    elif mysql_status_counter == max_number_cached_entries and self.mysql_connection is not None:
                         data_cache.append(logging_data)
                         logger.info("\t\t writing to cache")
                         mysql_status_list = []
@@ -124,6 +151,8 @@ class Monitoring:
                 if successfully_attached_file is not None:
                     os.remove(successfully_attached_file)
             raise e
+        finally:
+            self.loop_finished = True
 
     def send_mail(self):
         import smtplib

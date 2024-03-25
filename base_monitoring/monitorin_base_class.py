@@ -12,3 +12,6 @@ class Base_Parser:
     def collect_data(self):
         logger.error('method must be implemented in child class')
         raise NotImplementedError
+
+    def exit_parser(self):
+        logger.warning('nothing done - method should be implemented in child class')

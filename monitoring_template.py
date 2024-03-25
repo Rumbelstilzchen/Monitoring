@@ -3,10 +3,11 @@
 import logging
 from base_logging.base_logging import set_logger
 from base_MYSQL.mysql import db_write
-from base_monitoring.monitoring import Monitoring
+from base_monitoring.monitoring import Monitoring as Monitoring_class
 import configparser
 import sys
 import importlib
+import signal
 
 # Import monitoring module by cmdline argument
 if len(sys.argv) <= 1:
@@ -24,7 +25,7 @@ parser = getattr(importlib.import_module("%s.%s" % (module_name, module_name)), 
 # from USV.USV import USV as parser
 
 
-if __name__ == "__main__":
+def main():
     set_logger('logfile_%s.log' % parser.name)
     logger = logging.getLogger(__name__)
     logger.info('First Log')
@@ -67,6 +68,9 @@ if __name__ == "__main__":
     else:
         mail_config = None
 
-    Monitoring = Monitoring(refreshrate, writerate, parser_init, MYsqlConnection, mail_config)
-
+    Monitoring = Monitoring_class(refreshrate, writerate, parser_init, MYsqlConnection, mail_config)
     Monitoring.start()
+
+
+if __name__ == "__main__":
+    main()
