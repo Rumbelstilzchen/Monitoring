@@ -7,6 +7,7 @@ from retry import retry
 import logging
 import urllib3
 from base_monitoring.monitorin_base_class import Base_Parser
+import paho.mqtt.client as mqtt  # import the client1
 
 logger = logging.getLogger(__name__)
 
@@ -136,13 +137,59 @@ class Kostal_Piko_BA(Base_Parser):
             'BatTemperature',
             'BatStateOfCharge',
         ]
+        self.mqtt_client = None
+        self.mqtt_topic = ''
+        if 'MQTT_broker_ip' in self.configuration[self.name]:
+            try:
+                self.mqtt_topic = self.configuration.get(self.name, 'MQTT_topic')
+                self.mqtt_client = mqtt.Client(client_id=f"{self.name}_logger", clean_session=False,
+                                               protocol=4)  # create new instance
+                self.mqtt_client.will_set(f"equipment/{self.name}/connection", 'offline', qos=1, retain=True)
+
+                def on_connect(client, userdata, flags, rc):
+                    logger.info(f"Connecting - setting online status - rc: {rc}")
+                    client.publish(f"equipment/{Kostal_Piko_BA.name}/connection", 'online', qos=1, retain=True)
+
+                self.mqtt_client.username_pw_set(self.configuration.get(self.name, 'MQTT_user'),
+                                                 self.configuration.get(self.name, 'MQTT_PW'))
+                self.mqtt_client.tls_set("ca.crt")
+                # self.mqtt_client.tls_insecure_set(False)
+                self.mqtt_client.on_connect = on_connect
+                self.mqtt_client.connect(host=self.configuration.get(self.name, 'MQTT_broker_ip'),
+                                         port=self.configuration.getint(self.name, 'MQTT_broker_port'))
+                self.mqtt_client.loop_start()
+                # self.mqtt_client.publish(f"equipment/{self.name}/status", 'online', qos=1, retain=True)
+
+            except Exception:
+                logger.exception('Cannot connect to mqtt broker ignoring for this run')
+                self.mqtt_client = None
+
+    def exit_parser(self):
+        if self.mqtt_client is not None:
+            try:
+                self.mqtt_client.publish(f"equipment/{self.name}/status", 'offline', qos=1, retain=True)
+                logger.info('MQTT "offline"-status was set')
+                self.mqtt_client.loop_stop()
+            except Exception:
+                logger.exception('MQTT failed to set "offline"-status')
 
     def collect_data(self):
         self.load_data_fromurl()
         self.add_extra_entries()
         self.correct_data()
         self.add_batLadenFrei()
+        if self.mqtt_client is not None:
+            self.send_mqtt_data()
         return self.parsed_data
+
+    def send_mqtt_data(self):
+        try:
+            if not self.mqtt_client.is_connected():
+                self.mqtt_client.reconnect()
+            json_data = json.dumps(self.parsed_data)
+            self.mqtt_client.publish(self.mqtt_topic, json_data)
+        except Exception:
+            logger.exception('Error Sending date to mqtt_client - no retry')
 
     @staticmethod
     def reformat_data(input_dict, dictionary):
@@ -193,8 +240,8 @@ class Kostal_Piko_BA(Base_Parser):
             self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumptionGrid']
         elif self.parsed_data['dcPowerPV'] <= 0.001:
             self.parsed_data['AktHomeConsumptionSolar'] = 0
-            self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumptionGrid'] +\
-                                                     self.parsed_data['AktHomeConsumptionBat']
+            self.parsed_data['AktHomeConsumption'] = \
+                self.parsed_data['AktHomeConsumptionGrid'] + self.parsed_data['AktHomeConsumptionBat']
 
         # manchmal ist AktHomeConsumptionSolar negativ...wird hier korrigiert
         if self.parsed_data['AktHomeConsumptionSolar'] < 0 or self.parsed_data['AktHomeConsumptionBat'] < 0 or \
@@ -209,20 +256,18 @@ class Kostal_Piko_BA(Base_Parser):
                 logger.info('AktHomeConsumptionGrid is negative')
                 self.parsed_data['AktHomeConsumptionGrid'] = 0
 
-            self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumptionSolar'] + \
-                                                     self.parsed_data['AktHomeConsumptionBat'] + \
-                                                     self.parsed_data['AktHomeConsumptionGrid']
+            self.parsed_data['AktHomeConsumption'] = \
+                self.parsed_data['AktHomeConsumptionSolar'] + self.parsed_data['AktHomeConsumptionBat'] + \
+                self.parsed_data['AktHomeConsumptionGrid']
 
         # Correction of loading battery by grid(Ausgleichsladung)
         if self.parsed_data['BatCurrentDir'] == 0 and \
                 self.parsed_data['BatPowerLaden'] > self.parsed_data['AktHomeConsumptionGrid'] and \
                 self.parsed_data['dcPowerPV'] < 1:
-            logger.info('Bat is loaded bey Grid - assigning loading to AktHomeConsumptionGrid/AktHomeConsumption')
-            self.parsed_data['AktHomeConsumptionGrid'] = self.parsed_data['AktHomeConsumptionGrid'] + \
-                                                         self.parsed_data['BatPowerLaden']
+            logger.info('Bat is loaded by Grid - assigning loading to AktHomeConsumptionGrid/AktHomeConsumption')
+            self.parsed_data['AktHomeConsumptionGrid'] += self.parsed_data['BatPowerLaden']
 
-            self.parsed_data['AktHomeConsumption'] = self.parsed_data['AktHomeConsumption'] + self.parsed_data[
-                'BatPowerLaden']
+            self.parsed_data['AktHomeConsumption'] += self.parsed_data['BatPowerLaden']
 
         if self.parsed_data['acPower'] > 0.001:
             self.parsed_data['EinspeisenPower'] = self.parsed_data['acPower'] - \

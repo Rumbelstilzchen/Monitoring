@@ -12,11 +12,13 @@ import xml.etree.ElementTree as x_ET
 import numpy as np
 import pandas as pd
 import pvlib
+import json
 from pvlib.pvsystem import PVSystem
 from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 from base_monitoring.monitorin_base_class import Base_Parser
+import paho.mqtt.client as mqtt  # import the client1
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +58,8 @@ class DWD_SIM(Base_Parser):
             'Nh': ['Bewoelkung_H', 1, 0],  # High cloud cover (>7 km)
             'Nm': ['Bewoelkung_M', 1, 0],  # Midlevel cloud cover (2-7 km) (%)
             'Nl': ['Bewoelkung_L', 1, 0],  # Low cloud cover (lower than 2 km) (%)
+            'N': ['Bewoelkung', 1, 0],  # Total cloud cover (%)
+            'Neff': ['Bewoelkung_eff', 1, 0],  # Effective cloud cover (%)
             # 'RR3c': 'RR%6',   # Total precipitation during the last hour (kg/m2),
             # 'R130': 'RR6',    # Probability of precipitation > 3.0 mm during the last hour
             'DD': ['Wind_direction', 1, 0],  # 0°..360°, Wind direction
@@ -65,12 +69,47 @@ class DWD_SIM(Base_Parser):
             # 'FXh40': 'fx9',   # Probability of wind gusts >= 40kn within the last 12 hours
             # 'FXh55': 'fx11',  # Probability of wind gusts >= 55kn within the last 12 hours
             'PPPP': ['Luftdruck', 0.01, 0],  # Surface pressure, reduced (Pa)
+            'VV': ['Visibility', 1, 0],  # Visibility (m)
             # 'N': 'N',
             'Td': ['Td', 1, -273.15],
             # 'SS24': 'SS24',
             'Rad1h': ['Rad1h', 1, 0],  # kJ/m2
+            'RRS1c': ['SnowRainEquiv', 1, 0],  # kg/m"
         }
         # self.collect_data()
+        self.mqtt_client = None
+        self.mqtt_topic = ''
+        if 'MQTT_broker_ip' in self.configuration[self.name]:
+            try:
+                self.mqtt_topic = self.configuration.get(self.name, 'MQTT_topic')
+                self.mqtt_client = mqtt.Client(client_id=f"{self.name}_logger", clean_session=False,
+                                               protocol=4)  # create new instance
+                self.mqtt_client.will_set(f"equipment/{self.name}/connection", 'offline', qos=1, retain=True)
+
+                def on_connect(client, userdata, flags, rc):
+                    logger.info(f"Connecting - setting online status - rc: {rc}")
+                    client.publish(f"equipment/{DWD_SIM.name}/connection", 'online', qos=1, retain=True)
+                self.mqtt_client.username_pw_set(self.configuration.get(self.name, 'MQTT_user'),
+                                                 self.configuration.get(self.name, 'MQTT_PW'))
+                self.mqtt_client.tls_set("ca.crt")
+                self.mqtt_client.on_connect = on_connect
+                self.mqtt_client.connect(host=self.configuration.get(self.name, 'MQTT_broker_ip'),
+                                         port=self.configuration.getint(self.name, 'MQTT_broker_port'))
+                self.mqtt_client.loop_start()
+                # self.mqtt_client.publish(f"equipment/{self.name}/status", 'online', qos=1, retain=True)
+
+            except Exception:
+                logger.exception('Cannot connect to mqtt broker ignoring for this run')
+                self.mqtt_client = None
+
+    def exit_parser(self):
+        if self.mqtt_client is not None:
+            try:
+                self.mqtt_client.publish(f"equipment/{self.name}/status", 'offline', qos=1, retain=True)
+                logger.info('MQTT "offline"-status was set')
+                self.mqtt_client.loop_stop()
+            except Exception:
+                logger.exception('MQTT failed to set "offline"-status')
 
     @staticmethod
     def getHumidity(T, TD):
@@ -90,7 +129,32 @@ class DWD_SIM(Base_Parser):
         self.add_timesec()
         if name_configsection_SIM in self.configuration.sections():
             self.parsed_data = self.SIM_class.simulate_values(self.parsed_data)
+        if self.mqtt_client is not None:
+            self.send_mqtt_data()
         return self.parsed_data
+
+    def send_mqtt_data(self):
+        PandasDF = pd.DataFrame.from_dict(self.parsed_data)
+        PandasDF['TIMESTAMP'] = pd.to_datetime(PandasDF['TIMESTAMP'], format='%Y-%m-%d %H:%M:%S', utc=True)
+        PandasDF.set_index('TIMESTAMP', inplace=True)
+        now = datetime.now(tz=pytz.timezone('UTC'))
+        PandasDF = PandasDF.loc[(PandasDF.index>=now) & (PandasDF.index.date<=now.date())]
+        # current_hour_fraction = (PandasDF['time_sec'][0]-now.timestamp())/3600
+        if PandasDF.shape[0] >= 2:
+            mqtt_data = {
+                'time_sec': int(PandasDF['time_sec'][0]),
+                'TIMESTAMP': f"{PandasDF.index[0]}",
+                'hour_this': int(PandasDF['DCSim'][0]),  # *current_hour_fraction + PandasDF['DCSim'][1]*(1-current_hour_fraction)),
+                'hour_next': int(PandasDF['DCSim'][1]),  # *current_hour_fraction + PandasDF['DCSim'][1]*(1-current_hour_fraction)),
+                'remaining_day': int(PandasDF['DCSim'].sum()),  # -PandasDF['DCSim'][0]*(1-current_hour_fraction)),
+            }
+            try:
+                if not self.mqtt_client.is_connected():
+                    self.mqtt_client.reconnect()
+                json_data = json.dumps(mqtt_data)
+                self.mqtt_client.publish(self.mqtt_topic, json_data, retain=True)
+            except Exception:
+                logger.exception('Error Sending date to mqtt_client - no retry')
 
     def add_timesec(self):
         """Add UNIX timestamp
@@ -132,7 +196,7 @@ class DWD_SIM(Base_Parser):
             next(i for i, v in enumerate(item_selector_for_identical_times) if v)]
         for item_key in self.parsed_data.keys():
             if item_key != 'TIMESTAMP':
-                value = np.mean(np.array(self.parsed_data[item_key], dtype=np.float)[item_selector_for_identical_times],
+                value = np.mean(np.array(self.parsed_data[item_key], dtype=float)[item_selector_for_identical_times],
                                 axis=0)
                 temp_data[item_key] = getattr(value, "tolist", lambda: value)()
         self.parsed_data = temp_data
