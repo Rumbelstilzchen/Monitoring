@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from logging.handlers import RotatingFileHandler
 
 
 def set_stream_logger():
@@ -37,7 +38,7 @@ def set_logger(filename):
     # # add the handler to the logger
     # logging.root.addHandler(handler)
 
-    handler_file = logging.FileHandler(filename)
+    handler_file = RotatingFileHandler(filename, maxBytes=1024*2024, backupCount=0, encoding="utf-8", )
     handler_file.setFormatter(formatter)
     handler_file.setLevel(logging.INFO)
     logging.root.addHandler(handler_file)
