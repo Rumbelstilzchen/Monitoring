@@ -1,12 +1,12 @@
 [Unit]
 Description=Log DWD
-Wants=network.target
-After=network.target
+Wants=network-online.target
+After=network-online.target
 StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/home/pi/PythonProgs/monitoring/venv3p7/bin/python3 monitoring_template.py DWD
+ExecStart=/home/pi/PythonProgs/monitoring/venv3p11/bin/python3 monitoring_template.py DWD
 WorkingDirectory=/home/pi/PythonProgs/monitoring
 StandardOutput=inherit
 StandardError=inherit

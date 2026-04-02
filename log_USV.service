@@ -1,12 +1,12 @@
 [Unit]
 Description=Log USV
-Wants=network.target
-After=network.target
+Wants=network-online.target
+After=network-online.target
 StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/home/pi/PythonProgs/monitoring/venv3p9/bin/python3 monitoring_template.py USV
+ExecStart=/home/pi/PythonProgs/monitoring/venv3p11/bin/python3 monitoring_template.py USV
 WorkingDirectory=/home/pi/PythonProgs/monitoring
 StandardOutput=inherit
 StandardError=inherit
