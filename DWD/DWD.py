@@ -46,6 +46,8 @@ class DWD(Base_Parser):
             'Nh': ['Bewoelkung_H', 1, 0],  # High cloud cover (>7 km)
             'Nm': ['Bewoelkung_M', 1, 0],  # Midlevel cloud cover (2-7 km) (%)
             'Nl': ['Bewoelkung_L', 1, 0],  # Low cloud cover (lower than 2 km) (%)
+            'N': ['Bewoelkung', 1, 0],  # Total cloud cover (%)
+            'Neff': ['Bewoelkung_eff', 1, 0],  # Effective cloud cover (%)
             # 'RR3c': 'RR%6',   # Total precipitation during the last hour (kg/m2),
             # 'R130': 'RR6',    # Probability of precipitation > 3.0 mm during the last hour
             'DD': ['Wind_direction', 1, 0],  # 0°..360°, Wind direction
@@ -55,10 +57,12 @@ class DWD(Base_Parser):
             # 'FXh40': 'fx9',   # Probability of wind gusts >= 40kn within the last 12 hours
             # 'FXh55': 'fx11',  # Probability of wind gusts >= 55kn within the last 12 hours
             'PPPP': ['Luftdruck', 0.01, 0],  # Surface pressure, reduced (Pa)
+            'VV': ['Visibility', 1, 0],  # Visibility (m)
             # 'N': 'N',
             'Td': ['Td', 1, -273.15],
             # 'SS24': 'SS24',
             'Rad1h': ['Rad1h', 1, 0],  # kJ/m2
+            'RRS1c': ['SnowRainEquiv', 1, 0],  # kg/m"
         }
         # self.collect_data()
 

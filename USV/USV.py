@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import logging
-# import telnetlib
-# import urllib.request
 import pytz
 from datetime import datetime
 from nut2 import PyNUTClient
 from base_monitoring.monitorin_base_class import Base_Parser
-# from retry import retry
+from retry import retry
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +16,7 @@ class USV(Base_Parser):
     def __init__(self, config=None):
         super().__init__()
         self.configuration = config
+        self.timeout = max(min(10, self.configuration.getint(self.name, 'refreshrate') - 2), 2)
         self.timestamp = None
         self.http = None
         # self.time_zone = 'Europe/Berlin'
@@ -25,15 +24,15 @@ class USV(Base_Parser):
         self.tz = pytz.timezone(self.time_zone)
         self.nut_name = "ups"
 
-        self.nut = PyNUTClient(host=self.configuration[self.name]['IPAdresse'], debug=False, connect=False)
+        self.nut = PyNUTClient(host=self.configuration[self.name]['IPAdresse'], debug=False, connect=False, timeout=self.timeout)
         self.parsed_data = None
         self.id_fields = {
-            "battery.charge": ["battery_charge", int],
+            "battery.charge": ["battery_charge", float],
             # "battery.charge.low": "10",
             # "battery.charge.warning": "50",
             # "battery.date": "2001/09/25",
             # "battery.mfr.date": "2019/04/27",
-            "battery.runtime": ["battery_runtime", int],
+            "battery.runtime": ["battery_runtime", float],
             # "battery.runtime.low": "battery_runtime_low",
             # "battery.type": "PbAc
             "battery.voltage": ["battery_voltage", float],
@@ -58,12 +57,12 @@ class USV(Base_Parser):
             # "ups.delay.shutdown": "20
             # "ups.firmware": "924.Z3 .I
             # "ups.firmware.aux": "Z3
-            "ups.load": ["ups_load", int],
+            "ups.load": ["ups_load", float],
             # "ups.mfr": "American Power Conversion
             # "ups.mfr.date": "2019/04/27
             # "ups.model": "Back-UPS XS 700U
             # "ups.productid": "0002
-            "ups.realpower.nominal": ["nominal_power", int],
+            #"ups.realpower.nominal": ["nominal_power", int],
             # "ups.serial": "3B1917X69838
             "ups.status": ["ups_status", str],
             # "ups.test.result": "No test initiated
@@ -89,13 +88,16 @@ class USV(Base_Parser):
     #         output[dictionary[x['dxsId']]] = x['value']
     #     return output
 
-    # @retry(tries=2, delay=0)
+    @retry(tries=2, delay=0)
     def load_data(self):
         data = {}
         self.nut._connect()
         self.timestamp = datetime.now(self.tz)
-        for key in self.id_fields.keys():
-            data[self.id_fields[key][0]] = self.id_fields[key][1](self.nut.get_var(self.nut_name, key))
+        for key, item in self.id_fields.items():
+            try:
+                data[item[0]] = item[1](self.nut.get_var(self.nut_name, key))
+            except Exception:
+                data[item[0]] = None
             # print(self.nut.var_description(self.nut_name,key))
             # try:
             #     print(str(self.nut.list_range(self.nut_name,key)))
@@ -107,6 +109,8 @@ class USV(Base_Parser):
         self.parsed_data['time_sec'] = int(self.timestamp.timestamp())
         self.parsed_data['TIMESTAMP'] = datetime.fromtimestamp(
             self.parsed_data['time_sec'], self.tz).strftime('%Y-%m-%d %H:%M:%S')
+        self.parsed_data['nominal_power'] = self.parsed_data['ups_load'] * 5
+        #self.parsed_data['nominal_power'] = 500
 
     def correct_data(self):
         pass

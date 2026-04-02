@@ -27,6 +27,7 @@ class BYD(Base_Parser):
     def __init__(self, config):
         super().__init__()
         self.configuration = config
+        self.timeout = max(min(10, self.configuration.getint(self.name, 'refreshrate') - 2), 2)
         self.timestamp = None
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = 'UTC'
@@ -76,7 +77,7 @@ class BYD(Base_Parser):
         self.timestamp = datetime.now(self.tz)
         for key, value in self.site_struct.items():
             url = "http://" + self.configuration[self.name]['IPAdresse'] + "/asp/" + key + ".asp"
-            r4 = my_session.get(url, auth=authentication, timeout=10)
+            r4 = my_session.get(url, auth=authentication, timeout=self.timeout)
             if r4.status_code == 200:
                 page = r4.text
                 page = page.replace('><input readonly="readonly" type="text" value=', '>')

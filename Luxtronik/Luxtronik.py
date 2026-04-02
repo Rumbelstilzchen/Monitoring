@@ -28,6 +28,7 @@ class Luxtronik(Base_Parser):
     def __init__(self, config):
         super().__init__()
         self.configuration = config
+        self.timeout = max(min(10, self.configuration.getint(self.name, 'refreshrate') - 2), 2)
         self.hostHeatpump = self.configuration[self.name]['host']
         self.portHeatpump = self.configuration.getint(self.name, 'port')
         if self.configuration.has_option(self.name, 'host_HK'):
@@ -90,6 +91,7 @@ class Luxtronik(Base_Parser):
     def _read_from_socket(self):
         data_raw = []
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.settimeout(self.timeout)
         self._socket.connect((self.hostHeatpump, self.portHeatpump))
         self._socket.sendall(struct.pack(">ii", 3004, 0))
         cmd = struct.unpack(">i", self._socket.recv(4))[0]
@@ -127,7 +129,8 @@ class Luxtronik(Base_Parser):
     def read_temp_sensor(self):
         link = "http://%s/?m=1" % self.tasmota
         if self.http is None:
-            self.http = urllib3.PoolManager()
+            timeout = urllib3.Timeout(self.timeout)
+            self.http = urllib3.PoolManager(timeout=timeout)
         f = self.http.request('GET', link, retries=False)
         myfile = f.data.decode('utf-8').split('{m}')
         # f = urlopen(link, timeout=10)

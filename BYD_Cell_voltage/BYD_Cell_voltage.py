@@ -28,6 +28,7 @@ class BYD_Cell_voltage(Base_Parser):
         super().__init__()
         self.configuration = config
         self.timestamp = None
+        self.timeout = max(min(10, self.configuration.getint(self.name, 'refreshrate') - 2), 2)
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = 'UTC'
         self.tz = pytz.timezone(self.time_zone)
@@ -58,7 +59,7 @@ class BYD_Cell_voltage(Base_Parser):
         self.load_voltage_data()
         return self.parsed_data
 
-    @retry(tries=2, delay=0)
+    @retry(tries=6, delay=5)
     def load_basicdata_fromurl(self):
         data = {}
         my_session = requests.Session()
@@ -66,7 +67,7 @@ class BYD_Cell_voltage(Base_Parser):
                                        self.configuration[self.name]['password'])
         for key, value in self.base_site_struct.items():
             url = "http://" + self.configuration[self.name]['IPAdresse'] + "/asp/" + key + ".asp"
-            r4 = my_session.get(url, auth=authentication, timeout=10)
+            r4 = my_session.get(url, auth=authentication, timeout=self.timeout)
             if r4.status_code == 200:
                 page = r4.text
                 page = page.replace('><input readonly="readonly" type="text" value=', '>')
@@ -102,7 +103,7 @@ class BYD_Cell_voltage(Base_Parser):
             for module_ind in range(self.basic_data_infos['Nr_Modules']):
                 url2 = "http://" + self.configuration[self.name]['IPAdresse'] + "/goform/SetRunData"
                 payload = {"ArrayNum": array_ind+1, "SeriesBatteryNum": module_ind+1}
-                r4 = requests.post(url2, auth=authentication, data=payload)
+                r4 = my_session.post(url2, auth=authentication, data=payload, timeout=self.timeout)
 
                 if r4.status_code == 200:
                     page = r4.text
