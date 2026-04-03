@@ -18,8 +18,8 @@ from pvlib.pvsystem import PVSystem
 from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
-from base_monitoring.monitorin_base_class import Base_Parser
-import paho.mqtt.client as mqtt  # import the client1
+from base_classes.monitorin_base_class import Base_Parser
+from base_classes.mqtt import MQTTBase
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def check_values_empty(dict_data):
     return False
 
 
-name_configsection_SIM = "DWD_SIM_SolarSystem"
+name_configsection_SIM = "PVLib_Settings"
 
 
 def convert_to_float(input_string):
@@ -47,108 +47,67 @@ def convert_to_float(input_string):
 class DWD_SIM(Base_Parser):
     name = "DWD_SIM"
 
+    names_space = {
+        "dwd": "https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd",
+        "gx": "http://www.google.com/kml/ext/2.2",
+        "kml": "http://www.opengis.net/kml/2.2",
+        "atom": "http://www.w3.org/2005/Atom",
+        "xal": "urn:oasis:names:tc:ciq:xsdschema:xAL:2.0",
+    }
+
+    dict_IDs = {
+        # 'TN': 'Tn',  # Minimum temperature - within the last 12 hours
+        # 'TX': 'Tx',      # Maximum temperature - within the last 12 hours
+        "TTT": ["Temperature", 1, -273.15],  # Temperature 2m above surface
+        "SunD1": ["SS1", 1, 0],
+        "Nh": ["Bewoelkung_H", 1, 0],  # High cloud cover (>7 km)
+        "Nm": ["Bewoelkung_M", 1, 0],  # Midlevel cloud cover (2-7 km) (%)
+        "Nl": ["Bewoelkung_L", 1, 0],  # Low cloud cover (lower than 2 km) (%)
+        "N": ["Bewoelkung", 1, 0],  # Total cloud cover (%)
+        "Neff": ["Bewoelkung_eff", 1, 0],  # Effective cloud cover (%)
+        # 'RR3c': 'RR%6',   # Total precipitation during the last hour (kg/m2),
+        # 'R130': 'RR6',    # Probability of precipitation > 3.0 mm during the last hour
+        "DD": ["Wind_direction", 1, 0],  # 0°..360°, Wind direction
+        "FF": ["Windgeschw", 1, 0],  # Wind speed (m/s)
+        "FX1": ["Boeen", 1, 0],  # Maximum wind gust within the last hour (m/s)
+        # 'FXh25': 'fx6',   # Probability of wind gusts >= 25kn within the last 12 hours (% 0..100)
+        # 'FXh40': 'fx9',   # Probability of wind gusts >= 40kn within the last 12 hours
+        # 'FXh55': 'fx11',  # Probability of wind gusts >= 55kn within the last 12 hours
+        "PPPP": ["Luftdruck", 0.01, 0],  # Surface pressure, reduced (Pa)
+        "VV": ["Visibility", 1, 0],  # Visibility (m)
+        # 'N': 'N',
+        "Td": ["Td", 1, -273.15],
+        # 'SS24': 'SS24',
+        "Rad1h": ["Rad1h", 1, 0],  # kJ/m2
+        "RRS1c": ["SnowRainEquiv", 1, 0],  # kg/m"
+    }
+
     def __init__(self, config):
         super().__init__()
         self.configuration = config
-        self.timeout = max(
-            min(10, self.configuration.getint(self.name, "refreshrate") - 2), 2
-        )
-        self.SIM_class = SIM(config)
-        self.timestamp = None
+        try:
+            self.refreshrate = self.configuration.getint(self.name, "refreshrate")
+        except Exception:
+            self.refreshrate = 2
+        self.timeout = max(min(10, self.refreshrate - 2), 2)
+        self.http = None
+        self.mqtt_data = {}
         # self.time_zone = 'Europe/Berlin'
         self.time_zone = "UTC"
         self.tz = pytz.timezone(self.time_zone)
-        self.names_space = {
-            "dwd": "https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd",
-            "gx": "http://www.google.com/kml/ext/2.2",
-            "kml": "http://www.opengis.net/kml/2.2",
-            "atom": "http://www.w3.org/2005/Atom",
-            "xal": "urn:oasis:names:tc:ciq:xsdschema:xAL:2.0",
-        }
+        self.timestamp = datetime.now(self.tz)
+        self.SIM_class = SIM(config)
         self.station_IDs = self.configuration[self.name]["DWD_station_IDs"].split(",")
         self.station_link = self.configuration[self.name]["DWD_link"]
-        self.dict_IDs = {
-            # 'TN': 'Tn',  # Minimum temperature - within the last 12 hours
-            # 'TX': 'Tx',      # Maximum temperature - within the last 12 hours
-            "TTT": ["Temperature", 1, -273.15],  # Temperature 2m above surface
-            "SunD1": ["SS1", 1, 0],
-            "Nh": ["Bewoelkung_H", 1, 0],  # High cloud cover (>7 km)
-            "Nm": ["Bewoelkung_M", 1, 0],  # Midlevel cloud cover (2-7 km) (%)
-            "Nl": ["Bewoelkung_L", 1, 0],  # Low cloud cover (lower than 2 km) (%)
-            "N": ["Bewoelkung", 1, 0],  # Total cloud cover (%)
-            "Neff": ["Bewoelkung_eff", 1, 0],  # Effective cloud cover (%)
-            # 'RR3c': 'RR%6',   # Total precipitation during the last hour (kg/m2),
-            # 'R130': 'RR6',    # Probability of precipitation > 3.0 mm during the last hour
-            "DD": ["Wind_direction", 1, 0],  # 0°..360°, Wind direction
-            "FF": ["Windgeschw", 1, 0],  # Wind speed (m/s)
-            "FX1": ["Boeen", 1, 0],  # Maximum wind gust within the last hour (m/s)
-            # 'FXh25': 'fx6',   # Probability of wind gusts >= 25kn within the last 12 hours (% 0..100)
-            # 'FXh40': 'fx9',   # Probability of wind gusts >= 40kn within the last 12 hours
-            # 'FXh55': 'fx11',  # Probability of wind gusts >= 55kn within the last 12 hours
-            "PPPP": ["Luftdruck", 0.01, 0],  # Surface pressure, reduced (Pa)
-            "VV": ["Visibility", 1, 0],  # Visibility (m)
-            # 'N': 'N',
-            "Td": ["Td", 1, -273.15],
-            # 'SS24': 'SS24',
-            "Rad1h": ["Rad1h", 1, 0],  # kJ/m2
-            "RRS1c": ["SnowRainEquiv", 1, 0],  # kg/m"
-        }
-        # self.collect_data()
-        self.mqtt_client = None
-        self.mqtt_topic = ""
+
+        self.mqtt = None
         try:
-            self.connect_mqtt()
+            self.mqtt = MQTTBase(self.name, self.configuration[self.name].get('mqtt', None), self.suppress_zeros)
         except Exception as e:
             logger.exception("Cannot connect to MQTT")
             raise e
 
-    @retry(tries=4, delay=10, backoff=1.5, logger=logger)
-    def connect_mqtt(self):
-        if "MQTT_broker_ip" in self.configuration[self.name]:  #
-            logger.info("Connecting to MQTT")
-            self.mqtt_topic = self.configuration.get(self.name, "MQTT_topic")
-            self.mqtt_client = mqtt.Client(
-                mqtt.CallbackAPIVersion.VERSION2,
-                client_id=f"{self.name}_logger",
-                clean_session=False,
-                protocol=4,
-            )  # create new instance
-            self.mqtt_client.will_set(
-                f"equipment/{self.name}/connection", "offline", qos=1, retain=True
-            )
 
-            def on_connect(client, userdata, flags, reason_code, properties):
-                logger.info(f"Connecting - setting online status - rc: {reason_code}")
-                client.publish(
-                    f"equipment/{DWD_SIM.name}/connection",
-                    "online",
-                    qos=1,
-                    retain=True,
-                )
-
-            self.mqtt_client.username_pw_set(
-                self.configuration.get(self.name, "MQTT_user"),
-                self.configuration.get(self.name, "MQTT_PW"),
-            )
-            self.mqtt_client.tls_set("ca.crt")
-            self.mqtt_client.on_connect = on_connect
-            self.mqtt_client.connect(
-                host=self.configuration.get(self.name, "MQTT_broker_ip"),
-                port=self.configuration.getint(self.name, "MQTT_broker_port"),
-            )
-            self.mqtt_client.loop_start()
-            # self.mqtt_client.publish(f"equipment/{self.name}/status", 'online', qos=1, retain=True)
-
-    def exit_parser(self):
-        if self.mqtt_client is not None:
-            try:
-                self.mqtt_client.publish(
-                    f"equipment/{self.name}/connection", "offline", qos=1, retain=True
-                )
-                logger.info('MQTT "offline"-status was set')
-                self.mqtt_client.loop_stop()
-            except Exception:
-                logger.exception('MQTT failed to set "offline"-status')
 
     @staticmethod
     def getHumidity(T, TD):
@@ -168,13 +127,16 @@ class DWD_SIM(Base_Parser):
         self.parse_data()
         self.average_parsed_data()
         self.add_timesec()
-        if name_configsection_SIM in self.configuration.sections():
+        if name_configsection_SIM in self.configuration:
             self.parsed_data = self.SIM_class.simulate_values(self.parsed_data)
-        if self.mqtt_client is not None:
-            self.send_mqtt_data()
+
+        self.prepare_mqtt_data_and_send()
+
         return self.parsed_data
 
-    def send_mqtt_data(self):
+    def prepare_mqtt_data_and_send(self):
+        if self.mqtt.mqtt_client is None:
+            return
         PandasDF = pd.DataFrame.from_dict(self.parsed_data)
         PandasDF["TIMESTAMP"] = pd.to_datetime(
             PandasDF["TIMESTAMP"], format="%Y-%m-%d %H:%M:%S", utc=True
@@ -186,7 +148,7 @@ class DWD_SIM(Base_Parser):
         ]
         # current_hour_fraction = (PandasDF['time_sec'][0]-now.timestamp())/3600
         if PandasDF.shape[0] >= 2:
-            mqtt_data = {
+            self.mqtt_data = {
                 # "time_sec": int(PandasDF["time_sec"][0]),
                 "time_sec": PandasDF["time_sec"].iloc[0].item(),
                 "TIMESTAMP": f"{PandasDF.index[0]}",
@@ -200,13 +162,8 @@ class DWD_SIM(Base_Parser):
                 # "remaining_day": int(PandasDF["DCSim"].sum()),
                 "remaining_day": PandasDF["DCSim"].sum().item(),
             }
-            try:
-                if not self.mqtt_client.is_connected():
-                    self.mqtt_client.reconnect()
-                json_data = json.dumps(mqtt_data)
-                self.mqtt_client.publish(self.mqtt_topic, json_data, retain=True)
-            except Exception:
-                logger.exception("Error Sending date to mqtt_client - no retry")
+            self.mqtt.send_data(self.mqtt_data)
+
 
     def add_timesec(self):
         """Add UNIX timestamp
@@ -364,40 +321,40 @@ class SIM:
     def __init__(self, config):
         self.config = config
         self.longitude = self.config.getfloat(
-            name_configsection_SIM, "Longitude", raw=True
+            name_configsection_SIM, "Longitude"
         )
         self.latitude = self.config.getfloat(
-            name_configsection_SIM, "Latitude", raw=True
+            name_configsection_SIM, "Latitude"
         )
         self.altitude = self.config.getfloat(
-            name_configsection_SIM, "Altitude", raw=True
+            name_configsection_SIM, "Altitude"
         )
         self.elevation = self.config.getfloat(
-            name_configsection_SIM, "Elevation", raw=True
+            name_configsection_SIM, "Elevation"
         )
-        self.azimuth = self.config.getfloat(name_configsection_SIM, "Azimuth", raw=True)
+        self.azimuth = self.config.getfloat(name_configsection_SIM, "Azimuth")
         self.min_cos_zenith = self.config.getfloat(
-            name_configsection_SIM, "min_cos_zenith", raw=True
+            name_configsection_SIM, "min_cos_zenith"
         )
         self.NumPanels = self.config.getint(
-            name_configsection_SIM, "NumPanels", raw=True
+            name_configsection_SIM, "NumPanels"
         )
         self.NumStrings = self.config.getint(
-            name_configsection_SIM, "NumStrings", raw=True
+            name_configsection_SIM, "NumStrings"
         )
-        self.albedo = self.config.getfloat(name_configsection_SIM, "Albedo", raw=True)
+        self.albedo = self.config.getfloat(name_configsection_SIM, "Albedo")
         self.temperature_model = self.config.get(
-            name_configsection_SIM, "TEMPERATURE_MODEL", raw=True
+            name_configsection_SIM, "TEMPERATURE_MODEL"
         )
         self.inverter = self.config.get(
-            name_configsection_SIM, "InverterName", raw=True
+            name_configsection_SIM, "InverterName"
         )
-        self.module = self.config.get(name_configsection_SIM, "ModuleName", raw=True)
+        self.module = self.config.get(name_configsection_SIM, "ModuleName")
         self.module_eff = self.config.getfloat(
-            name_configsection_SIM, "ModulEfficiency", raw=True
+            name_configsection_SIM, "ModulEfficiency"
         )
         self.TemperatureOffset = self.config.getfloat(
-            name_configsection_SIM, "TemperatureOffset", raw=True
+            name_configsection_SIM, "TemperatureOffset"
         )
 
         self.temperature_model_parameters = TEMPERATURE_MODEL_PARAMETERS["sapm"][
