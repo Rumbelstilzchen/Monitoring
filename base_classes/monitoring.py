@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import os
 import logging
-from datetime import datetime
-import time
+import os
 import signal
-
-# import numpy as np
+import time
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -19,21 +17,21 @@ class Monitoring:
         refreshrate,
         writerate,
         data_parser=None,
-        mysql_connection=None,
+        db_connection=None,
         mail_config=None,
     ):
         # self.refreshrate = refreshrate
         self.writerate = writerate
         self.samples_per_write = int(writerate / refreshrate)
         self.refreshrate = self.writerate / self.samples_per_write
-        self.mysql_connection = mysql_connection
+        self.db_connection = db_connection
         self.data_parser = data_parser
         self.mail_settings = mail_config
         self.loop_finished = False
 
-    def exit_monitoring(self, reasoncode=None, properties=None):
-        logger.info(f"{reasoncode}")
-        logger.info(f"{properties}")
+    def exit_monitoring(self, signum=None, frame=None):
+        logger.info(f"signum: {signum}")
+        logger.info(f"frame: {frame}")
         self.running = False
         logger.info("Exiting - Running set to false")
         time_counter = 0
@@ -49,6 +47,7 @@ class Monitoring:
 
     def start(self):
         signal.signal(signal.SIGTERM, self.exit_monitoring)
+        signal.signal(signal.SIGINT, self.exit_monitoring)
         self.running = True
         max_number_cached_entries = 15
         counter = 0
@@ -105,7 +104,7 @@ class Monitoring:
                         else:
                             logger.debug(
                                 "\t parsed_data: %s"
-                                % str(self.data_parser.parsed_data["time_sec"])
+                                , str(self.data_parser.parsed_data["time_sec"])
                             )
 
                 if not self.running:
@@ -123,20 +122,22 @@ class Monitoring:
                         self.data_parser.set_averages(logging_data)
                     else:
                         logging_data = logging_list[0]
-                    if self.mysql_connection is None:
+
+
+                    if self.db_connection is None:
                         continue
                     if not data_caching:
                         if self.writerate >= 300:
                             try:
-                                self.mysql_connection.connect()
+                                self.db_connection.connect()
                             except Exception:
                                 mysql_status = False
                             else:
-                                mysql_status = self.mysql_connection.write_dict_data(
+                                mysql_status = self.db_connection.write_dict_data(
                                     logging_data
                                 )
                         else:
-                            mysql_status = self.mysql_connection.write_dict_data(
+                            mysql_status = self.db_connection.write_dict_data(
                                 logging_data
                             )
                         if not mysql_status:
@@ -145,27 +146,28 @@ class Monitoring:
                             mysql_status_counter += 1
                             logger.info("\tcaching enabled")
                             logger.info("\t\t writing to cache")
-                            self.mysql_connection.close()
+                            self.db_connection.close()
                         elif self.writerate >= 300:
-                            self.mysql_connection.close()
+                            self.db_connection.close()
                         # else:
-                        #     logger.info('\tMYSQL: %s' % logging_data['TIMESTAMP'])
+                        #     logger.info('\tMYSQL: %s' % influx_points['TIMESTAMP'])
                     elif mysql_status_counter == max_number_cached_entries:
                         data_cache.append(logging_data)
                         logger.info("\t\t writing to cache")
                         mysql_status_list = []
-                        self.mysql_connection.connect(info_output=True)
+                        self.db_connection.connect(info_output=True)
                         for logging_data in data_cache:
-                            mysql_status = self.mysql_connection.write_dict_data(
+                            mysql_status = self.db_connection.write_dict_data(
                                 logging_data
                             )
                             if not mysql_status:
                                 logger.warning(
-                                    "\t\tMYSQL: %s" % logging_data["TIMESTAMP"]
+                                    "\t\tINflux: %s not written to mysql"
+                                    , logging_data[0].time
                                 )
                             mysql_status_list.append(mysql_status)
                         if self.writerate >= 300:
-                            self.mysql_connection.close()
+                            self.db_connection.close()
                         if all(mysql_status_list):
                             logger.info(
                                 "\tcaching disabled - Data Cache written to mysql"
@@ -252,10 +254,10 @@ class Monitoring:
             errors = server.send_message(message)
         if len(errors) == 0:
             return filename
-        else:
-            for key, value in errors.items():
-                print(f"{key}: {value}")
-            return None
+
+        for key, value in errors.items():
+            print(f"{key}: {value}")
+        return None
 
     @staticmethod
     def average_of_dicts(

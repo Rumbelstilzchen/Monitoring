@@ -1,29 +1,32 @@
 # -*- coding: utf-8 -*-
 
-import importlib
 import logging
-import sys
 
 from base_classes.config import ConfigDict, get_config_value, load_config
 from base_classes.db_wrapper import db_write
 from base_classes.base_logging import set_logger
 from base_classes.monitoring import Monitoring as Monitoring_class
 
-# Import monitoring module by cmdline argument
-if len(sys.argv) <= 1:
-    raise RuntimeError("Too less arguments calling script")
+# from USV_modbus.USV_modbus import USV_modbus as parser
+# from Kostal.Kostal import Kostal as parser
+#from Kostal_Piko_BA.Kostal_Piko_BA import Kostal_Piko_BA as parser
 
-module_name = sys.argv[1]
-parser = getattr(
-    importlib.import_module("%s.%s" % (module_name, module_name)), module_name
-)
+# Import monitoring module by cmdline argument
+# if len(sys.argv) <= 1:
+#     raise RuntimeError("Too less arguments calling script")
+# else:
+#     module_name = sys.argv[1]
+# parser = getattr(importlib.import_module("%s.%s" % (module_name, module_name)), module_name)
 # parser = getattr(__import__("%s.%s" % (module_name,module_name), fromlist=[module_name]), module_name)
 
 # For debugging purposes any of the lines below does the same thing but static
-# from BYD.BYD import BYD as parser
-# from Kostal.Kostal import Kostal as parser
+# from Kostal_Piko_BA.Kostal_Piko_BA import Kostal_Piko_BA as parser
+#from Elgris.Elgris import Elgris as parser
+from GoE_Garage.GoE_Garage import GoE_Garage as parser
+
 # from DWD.DWD import DWD as parser
 # from DWD_SIM.DWD_SIM import DWD_SIM as parser
+
 # from USV.USV import USV as parser
 
 
@@ -36,9 +39,11 @@ def main():
     configuration = load_config()
 
     refreshrate = get_config_value(
-        configuration, parser.name, "refreshrate", default=10
+        configuration, parser.name, "refreshrate_debug", default=10
     )
-    writerate = get_config_value(configuration, parser.name, "writerate", default=60)
+    writerate = get_config_value(
+        configuration, parser.name, "writerate_debug", default=60
+    )
 
     if parser.name in configuration:
         try:
@@ -67,7 +72,8 @@ def main():
         DBConnection = db_write(DB_config)
     except Exception as e:
         logger.exception("on load MYSQL class")
-        raise e
+        DBConnection = None
+        # raise e
 
     mail_config = get_config_value(configuration, "Mail")
 
