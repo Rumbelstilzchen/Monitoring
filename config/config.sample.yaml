@@ -1,0 +1,48 @@
+## This is a sample configuration file
+## Copy this file to config/config.yaml and adjust the values
+
+DB_global:
+  influxdb2:
+    host: 192.168.2.56
+    port: 8086
+    org: private
+  mysql:
+    host: 192.168.2.56
+    port: 3307
+    pw: your-app-password
+
+Mail:
+  From: your-email@gmail.com
+  To: recipient@example.com
+  Server: smtp.gmail.com
+  port: 465
+  Password: your-app-password
+
+Kostal_Piko_BA:
+  IPAdresse: 192.168.2.10
+  LeistungsBegrenzung: 5320
+  refreshrate: 10
+  refreshrate_debug: 10
+  writerate: 60
+  writerate_debug: 60
+  influxdb2:
+    bucket: energy_monitoring
+    token: your-influxdb-token-here
+  mysql:
+    DB: SolarAnlage
+    username: SolarAnlage
+    table: WR_Daten
+  mqtt:
+    broker_ip: mqtt.petrosilius.de
+    broker_port: 8883
+    topic: SmartHome/Kostal_Piko_BA2
+    user: username
+    PW: your-app-password
+    cert_file: ca.crt # path to crt file relative to this config
+
+## Additional monitoring modules can be added with their respective configuration
+## Example for another module:
+# AnotherModule:
+#   setting1: value1
+#   setting2: value2
+
