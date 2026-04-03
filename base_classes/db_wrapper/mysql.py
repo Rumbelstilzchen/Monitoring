@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import logging
-# import pymysql as mysql
+
 import mysql.connector as mysql_connector
+
 logger = logging.getLogger(__name__)
-# logger = logging.getLogger()
+
 
 
 class db_write:
@@ -24,11 +25,11 @@ class db_write:
     def connect(self, info_output=False):
         try:
             self.connection = mysql_connector.connect(
-                host=self.config['mysql_host'],
-                port=self.config['mysql_port'],
-                user=self.config['mysql_username'],
-                password=self.config['mysql_pw'],
-                db=self.config['mysql_DB'],
+                host=self.config['host'],
+                port=self.config['port'],
+                user=self.config['username'],
+                password=self.config['pw'],
+                db=self.config['DB'],
                 charset='utf8')
             if 'time_zone' in self.config.keys():
                 self.connection.time_zone = self.config['time_zone']
@@ -96,7 +97,7 @@ class db_write:
         if self.statement_type.upper() == 'UPDATE':
             try:
                 with self.connection.cursor() as cursor:
-                    sql_delete = f'DELETE FROM {self.config["mysql_table"]} WHERE {time_column} >= ' \
+                    sql_delete = f'DELETE FROM {self.config["table"]} WHERE {time_column} >= ' \
                                  f'{myDict[time_column][0]}'
                     cursor.execute(sql_delete)
                     self.connection.commit()
@@ -108,16 +109,14 @@ class db_write:
         try:
             placeholders = ', '.join(['%s'] * len(myDict))
             columns = ', '.join(myDict.keys())
-            sql = f"INSERT INTO {self.config['mysql_table']} ( {columns} ) VALUES ( {placeholders} )"
+            sql = f"INSERT INTO {self.config['table']} ( {columns} ) VALUES ( {placeholders} )"
             entry_list = []
             for index in range(len(myDict[time_column])):
                 entry_list.append(tuple([x[index] for x in myDict.values()]))
             with self.connection.cursor() as cursor:
                 cursor.executemany(sql, entry_list)
-                # for index in range(len(myDict[time_column])):
-                #     cursor.execute(sql, [x[index] for x in myDict.values()])
                 self.connection.commit()
-                # logger.debug("MYSQL: %s", str([x[index] for x in myDict.values()]))
+                # print(f'{myDict["TIMESTAMP"]}:{sql}')
                 logger.debug("MYSQL: first element: %s", str(entry_list[0]))
         except Exception:
             logger.exception('MYSQLERROR')
@@ -137,7 +136,7 @@ class db_write:
                 raise NotImplementedError
             try:
                 with self.connection.cursor() as cursor:
-                    sql_delete = f'DELETE FROM {self.config["mysql_table"]} WHERE {time_column} = {myDict[time_column]}'
+                    sql_delete = f'DELETE FROM {self.config["table"]} WHERE {time_column} = {myDict[time_column]}'
                     cursor.execute(sql_delete)
                     self.connection.commit()
                 logger.debug("MYSQL: deleting old entries")
@@ -150,7 +149,8 @@ class db_write:
                 with self.connection.cursor() as cursor:
                     placeholders = ', '.join(['%s'] * len(myDict))
                     columns = ', '.join(myDict.keys())
-                    sql = "INSERT INTO %s ( %s ) VALUES ( %s )" % (self.config['mysql_table'], columns, placeholders)
+                    sql = "INSERT INTO %s ( %s ) VALUES ( %s )" % (self.config['table'], columns, placeholders)
+                    # print(f'{myDict["TIMESTAMP"]}:{sql}')
                     cursor.execute(sql, [x for x in myDict.values()])
                     self.connection.commit()
                 logger.debug("MYSQL: %s", str([x for x in myDict.values()]))
