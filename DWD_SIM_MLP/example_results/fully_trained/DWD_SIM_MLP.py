@@ -12,7 +12,7 @@ import shutil
 from datetime import datetime
 import xml.etree.ElementTree as x_ET
 import numpy as np
-from base_MYSQL.mysql import db_write
+from db_wrapper.mysql import db_write
 from base_monitoring.monitorin_base_class import Base_Parser
 from DWD_SIM.DWD_SIM import SIM
 import pickle
@@ -689,7 +689,7 @@ if __name__ == "__main__":
 
     set_stream_logger()
     logger.info('Test')
-    logging.getLogger('base_MYSQL.mysql').setLevel(logging.WARNING)
+    logging.getLogger('db_wrapper.mysql').setLevel(logging.WARNING)
 
     import configparser
     configuration = configparser.ConfigParser()

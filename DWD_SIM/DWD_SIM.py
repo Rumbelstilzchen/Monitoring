@@ -546,7 +546,7 @@ class SIM:
 def simulate_old_data():
     parser = DWD_SIM
 
-    from base_MYSQL.mysql import db_write
+    from db_wrapper.mysql import db_write
     import configparser
 
     configuration = configparser.ConfigParser()
