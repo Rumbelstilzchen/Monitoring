@@ -9,7 +9,8 @@ influxdb-client
 PyYAML
 pysunspec2
 serial
-nut2
+#nut2  # the orriginal nut2 package uses telnetlib which is deprecated in python 3.13 and up
+nut2-notl
 pvlib >= 0.8
 lxml
 requests
