@@ -1,0 +1,15 @@
+#numpy
+mysql-connector-python<=8.0.29
+retry
+pytz
+urllib3
+paho-mqtt
+#influxdb3-python
+influxdb-client
+PyYAML
+pysunspec2
+serial
+nut2
+pvlib >= 0.8
+lxml
+requests

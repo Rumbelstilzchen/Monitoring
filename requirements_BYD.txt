@@ -1,7 +1,0 @@
-numpy
-# PyMySQL
-mysql-connector-python
-lxml
-retry
-requests
-pytz
