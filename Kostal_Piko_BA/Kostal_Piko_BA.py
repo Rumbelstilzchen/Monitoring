@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 
-import json
 import base64
 import hashlib
+import json
+import logging
+import os
 import pickle
 from datetime import datetime
-import pytz
-from retry import retry
-import logging
-import urllib3
-from base_monitoring.monitorin_base_class import Base_Parser
-import paho.mqtt.client as mqtt  # import the client1
-
 from itertools import islice
+
+import pytz
+import urllib3
+from retry import retry
+
+from base_classes.monitorin_base_class import Base_Parser
+from base_classes.mqtt import MQTTBase
 
 logger = logging.getLogger(__name__)
 
@@ -76,9 +78,9 @@ def login_to_kostal(
         ):
             logger.info("Login erfolgreich")
             return session_id
-        else:
-            logger.warning(f"Login fehlgeschlagen: {response.status}")
-            return None
+
+        logger.warning(f"Login fehlgeschlagen: {response.status}")
+        return None
     except Exception as e:
         logger.error(f"Login failed: {e}")
         return None
@@ -86,6 +88,397 @@ def login_to_kostal(
 
 class Kostal_Piko_BA(Base_Parser):
     name = "Kostal_Piko_BA"
+
+    influx_tags = {
+        "BatPowerLaden": (
+            "power",
+            float,
+            {
+                "measurement": "byd_battery",
+                "tags": {
+                    "flow_type": "dc",
+                    "flow_source": "WR",
+                    "flow_destination": "battery",
+                    "type": "power",
+                    "unit": "W",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "BatPowerEntLaden": (
+            "power",
+            float,
+            {
+                "measurement": "byd_battery",
+                "tags": {
+                    "flow_type": "dc",
+                    "flow_source": "battery",
+                    "flow_destination": "WR",
+                    "type": "power",
+                    "unit": "W",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "BatCurrent": (
+            "current",
+            float,
+            {
+                "measurement": "byd_battery",
+                "tags": {
+                    "flow_type": "dc",
+                    "flow_source": "battery",
+                    "flow_destination": "WR",
+                    "type": "current",
+                    "unit": "A",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "BatVoltage": (
+            "voltage",
+            float,
+            {
+                "measurement": "byd_battery",
+                "tags": {
+                    "flow_type": "dc",
+                    "type": "voltage",
+                    "unit": "V",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "ChargeCycles": (
+            "cycles",
+            int,
+            {
+                "measurement": "byd_battery",
+                "tags": {"type": "cycles", "device": "piko_ba_sensor"},
+            },
+        ),
+        "BatTemperature": (
+            "temperature",
+            float,
+            {
+                "measurement": "byd_battery",
+                "tags": {
+                    "type": "temperature",
+                    "unit": "°C",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "BatStateOfCharge": (
+            "SOC",
+            int,
+            {
+                "measurement": "byd_battery",
+                "tags": {"type": "SOC", "unit": "'%'", "device": "piko_ba_sensor"},
+            },
+        ),
+        "AktHomeConsumptionSolar": (
+            "power",
+            float,
+            {
+                "measurement": "home_consumption",
+                "tags": {
+                    "origin": "pv",
+                    "flow_type": "ac",
+                    "flow_source": "WR",
+                    "flow_destination": "home",
+                    "type": "power",
+                    "unit": "W",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "AktHomeConsumptionBat": (
+            "power",
+            float,
+            {
+                "measurement": "home_consumption",
+                "tags": {
+                    "origin": "battery",
+                    "flow_type": "ac",
+                    "flow_source": "WR",
+                    "flow_destination": "home",
+                    "type": "power",
+                    "unit": "W",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "AktHomeConsumptionGrid": (
+            "power",
+            float,
+            {
+                "measurement": "home_consumption",
+                "tags": {
+                    "origin": "grid",
+                    "flow_type": "ac",
+                    "flow_source": "grid",
+                    "flow_destination": "home",
+                    "type": "power",
+                    "unit": "W",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "EinspeisenPower": (
+            "power",
+            float,
+            {
+                "measurement": "grid",
+                "tags": {
+                    "flow_type": "ac",
+                    "flow_source": "WR",
+                    "flow_destination": "grid",
+                    "type": "power",
+                    "unit": "W",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "GridVoltageL1": (
+            "voltage",
+            float,
+            {
+                "measurement": "grid",
+                "tags": {
+                    "origin": "L1",
+                    "flow_type": "ac",
+                    "type": "voltage",
+                    "unit": "V",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "GridVoltageL2": (
+            "voltage",
+            float,
+            {
+                "measurement": "grid",
+                "tags": {
+                    "origin": "L2",
+                    "flow_type": "ac",
+                    "type": "voltage",
+                    "unit": "V",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "GridVoltageL3": (
+            "voltage",
+            float,
+            {
+                "measurement": "grid",
+                "tags": {
+                    "origin": "L3",
+                    "flow_type": "ac",
+                    "type": "voltage",
+                    "unit": "V",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "dc1Power": (
+            "power",
+            float,
+            {
+                "measurement": "pv1_s1",
+                "tags": {
+                    "flow_type": "dc",
+                    "flow_source": "PV",
+                    "flow_destination": "WR",
+                    "type": "power",
+                    "unit": "W",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "dc1Voltage": (
+            "voltage",
+            float,
+            {
+                "measurement": "pv1_s1",
+                "tags": {
+                    "flow_type": "dc",
+                    "type": "voltage",
+                    "unit": "V",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "dc1Current": (
+            "current",
+            float,
+            {
+                "measurement": "pv1_s1",
+                "tags": {
+                    "flow_type": "dc",
+                    "flow_source": "PV",
+                    "flow_destination": "WR",
+                    "type": "current",
+                    "unit": "A",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "dc2Power": (
+            "power",
+            float,
+            {
+                "measurement": "pv1_s2",
+                "tags": {
+                    "flow_type": "dc",
+                    "flow_source": "PV",
+                    "flow_destination": "WR",
+                    "type": "power",
+                    "unit": "W",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "dc2Voltage": (
+            "voltage",
+            float,
+            {
+                "measurement": "pv1_s2",
+                "tags": {
+                    "flow_type": "dc",
+                    "type": "voltage",
+                    "unit": "V",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "dc2Current": (
+            "current",
+            float,
+            {
+                "measurement": "pv1_s2",
+                "tags": {
+                    "flow_type": "dc",
+                    "flow_source": "PV",
+                    "flow_destination": "WR",
+                    "type": "current",
+                    "unit": "A",
+                    "device": "piko_ba_sensor",
+                },
+            },
+        ),
+        "operatingStatus": (
+            "state",
+            int,
+            {
+                "measurement": "wr",
+                "tags": {
+                    "type": "state",
+                    "device": "piko_ba_sensor",
+                    "origin": "wr1",
+                    "unit": "state_code",
+                },
+            },
+        ),
+    }
+
+    # dict_dxsID_openWB = {
+    #     67109379: "GridPowerL1",
+    #     67109635: "GridPowerL2",
+    #     67109891: "GridPowerL3",
+    #     67109377: "GridCurrentL1",
+    #     67109633: "GridCurrentL2",
+    #     67109889: "GridCurrentL3",
+    #     83887106: "AktHomeConsumptionL1",
+    #     83887362: "AktHomeConsumptionL2",
+    #     83887618: "AktHomeConsumptionL3",
+    # }
+    dict_dxsID = {
+        # 167772417: 'Analog1',
+        # 167772673: 'Analog2',
+        # 167772929: 'Analog3',
+        # 167773185: 'Analog4',
+        # 33556249: 'dischargeHysteresisOn'  # minimal Watt for usage of battery
+        # 83888896: 'wintermode',
+        # 83888640: 'eps',
+        # 33556484: 'weatherForecast'
+        # 33556239: 'chargeTimeStart',
+        # 33556240: 'chargeTimeEnd',
+        # 33556236: 'maintenanceCharge',
+        # 33556231: 'minSoCManual',
+        # 33556232: 'minSoCManualInc',
+        # 33556233: 'minSoCManualIncStart',
+        # 33556234: 'minSoCManualIncEnd',
+        # 33556247: 'minSoCAutomatic',
+        # 33556248: 'minSoCDynamic',
+        # 33556482: 'pvModuleRegulation',
+        # 67110913: 'overvoltageProtectionAc',
+        # 117441537: 'portalCode',
+        # 117441539: 'portalExport',
+        # 201326848: 'S0Function',
+        # 201327105: 'OwnConsumpCtrlFunction',
+        # 201327113: 'DelayError',
+        # 201327106: 'DelayErrorEnable',
+        # 201327107: 'Fc1PowerThreshold',
+        # 201327108: 'Fc1ExceedTime',
+        # 201327109: 'Fc1Runtime',
+        # 201327110: 'Fc1MaxActivationsDay',
+        # 201327111: 'Fc2ThresholdOn',
+        # 201327112: 'Fc2ThresholdOff',
+        # 201327114: 'UseBattery',
+        33556226: "BatVoltage",
+        33556238: "BatCurrent",
+        33556230: "BatCurrentDir",
+        33556228: "ChargeCycles",
+        33556227: "BatTemperature",
+        33556229: "BatStateOfCharge",
+        83886336: "AktHomeConsumptionSolar",
+        83886592: "AktHomeConsumptionBat",
+        83886848: "AktHomeConsumptionGrid",
+        # 83888128: 'AktHomeConsumptionSolarBat',
+        # 251658753: 'ErtragGesamt',
+        # 251658496: 'Betriebszeit',
+        # 251659009: 'HausverbrauchGesamt',
+        # 251659265: 'EigenverbrauchGesamt',
+        # 251659280: 'EigenverbrauchsquoteGesamt',
+        # 251659281: 'AutarkiegradGesamt',
+        # 251658754: 'ErtragHeute',
+        # 251659010: 'HausverbrauchHeute',
+        # 251659266: 'EigenverbrauchHeute',
+        # 251659278: 'EigenverbrauchsquoteHeute',
+        # 251659279: 'AutarkiegradHeute',
+        # 117441538: 'CurrentPortal',
+        # 117441542: 'TimeSinceLatestConnectionToPortal',
+        83887872: "AktHomeConsumption",
+        33555203: "dc1Power",
+        33555459: "dc2Power",
+        # 33555715: 'dc3Power',
+        33556736: "dcPowerPV",
+        67109120: "acPower",
+        16780032: "operatingStatus",
+        67110400: "GridFreq",
+        67110656: "GridCosPhi",
+        67110144: "GridLimitation",
+        # 67109379: 'GridPowerL1',
+        # 67109635: 'GridPowerL2',
+        # 67109891: 'GridPowerL3',
+        67109378: "GridVoltageL1",
+        67109634: "GridVoltageL2",
+        67109890: "GridVoltageL3",
+        # 67109377: 'GridCurrentL1',
+        # 67109633: 'GridCurrentL2',
+        # 67109889: 'GridCurrentL3',
+        # 83887106: 'AktHomeConsumptionL1',
+        # 83887362: 'AktHomeConsumptionL2',
+        # 83887618: 'AktHomeConsumptionL3',
+        33555202: "dc1Voltage",
+        33555201: "dc1Current",
+        33555458: "dc2Voltage",
+        33555457: "dc2Current",
+        # 33555714: 'dc3Voltage',
+        # 33555713: 'dc3Current',
+        # 83888128: 'ownConsumption',
+    }
 
     def __init__(self, config):
         super().__init__()
@@ -101,105 +494,7 @@ class Kostal_Piko_BA(Base_Parser):
         self.time_zone = "UTC"
         self.tz = pytz.timezone(self.time_zone)
         self.timestamp = datetime.now(self.tz)
-        self.dict_dxsID_openWB = {
-            67109379: "GridPowerL1",
-            67109635: "GridPowerL2",
-            67109891: "GridPowerL3",
-            67109377: "GridCurrentL1",
-            67109633: "GridCurrentL2",
-            67109889: "GridCurrentL3",
-            83887106: "AktHomeConsumptionL1",
-            83887362: "AktHomeConsumptionL2",
-            83887618: "AktHomeConsumptionL3",
-        }
-        self.dict_dxsID = {
-            # 167772417: 'Analog1',
-            # 167772673: 'Analog2',
-            # 167772929: 'Analog3',
-            # 167773185: 'Analog4',
-            # 33556249: 'dischargeHysteresisOn'  # minimal Watt for usage of battery
-            # 83888896: 'wintermode',
-            # 83888640: 'eps',
-            # 33556484: 'weatherForecast'
-            # 33556239: 'chargeTimeStart',
-            # 33556240: 'chargeTimeEnd',
-            # 33556236: 'maintenanceCharge',
-            # 33556231: 'minSoCManual',
-            # 33556232: 'minSoCManualInc',
-            # 33556233: 'minSoCManualIncStart',
-            # 33556234: 'minSoCManualIncEnd',
-            # 33556247: 'minSoCAutomatic',
-            # 33556248: 'minSoCDynamic',
-            # 33556482: 'pvModuleRegulation',
-            # 67110913: 'overvoltageProtectionAc',
-            # 117441537: 'portalCode',
-            # 117441539: 'portalExport',
-            # 201326848: 'S0Function',
-            # 201327105: 'OwnConsumpCtrlFunction',
-            # 201327113: 'DelayError',
-            # 201327106: 'DelayErrorEnable',
-            # 201327107: 'Fc1PowerThreshold',
-            # 201327108: 'Fc1ExceedTime',
-            # 201327109: 'Fc1Runtime',
-            # 201327110: 'Fc1MaxActivationsDay',
-            # 201327111: 'Fc2ThresholdOn',
-            # 201327112: 'Fc2ThresholdOff',
-            # 201327114: 'UseBattery',
-            33556226: "BatVoltage",
-            33556238: "BatCurrent",
-            33556230: "BatCurrentDir",
-            33556228: "ChargeCycles",
-            33556227: "BatTemperature",
-            33556229: "BatStateOfCharge",
-            83886336: "AktHomeConsumptionSolar",
-            83886592: "AktHomeConsumptionBat",
-            83886848: "AktHomeConsumptionGrid",
-            # 83888128: 'AktHomeConsumptionSolarBat',
-            # 251658753: 'ErtragGesamt',
-            # 251658496: 'Betriebszeit',
-            # 251659009: 'HausverbrauchGesamt',
-            # 251659265: 'EigenverbrauchGesamt',
-            # 251659280: 'EigenverbrauchsquoteGesamt',
-            # 251659281: 'AutarkiegradGesamt',
-            # 251658754: 'ErtragHeute',
-            # 251659010: 'HausverbrauchHeute',
-            # 251659266: 'EigenverbrauchHeute',
-            # 251659278: 'EigenverbrauchsquoteHeute',
-            # 251659279: 'AutarkiegradHeute',
-            # 117441538: 'CurrentPortal',
-            # 117441542: 'TimeSinceLatestConnectionToPortal',
-            83887872: "AktHomeConsumption",
-            33555203: "dc1Power",
-            33555459: "dc2Power",
-            # 33555715: 'dc3Power',
-            33556736: "dcPowerPV",
-            67109120: "acPower",
-            16780032: "operatingStatus",
-            67110400: "GridFreq",
-            67110656: "GridCosPhi",
-            67110144: "GridLimitation",
-            # 67109379: 'GridPowerL1',
-            # 67109635: 'GridPowerL2',
-            # 67109891: 'GridPowerL3',
-            67109378: "GridVoltageL1",
-            67109634: "GridVoltageL2",
-            67109890: "GridVoltageL3",
-            # 67109377: 'GridCurrentL1',
-            # 67109633: 'GridCurrentL2',
-            # 67109889: 'GridCurrentL3',
-            # 83887106: 'AktHomeConsumptionL1',
-            # 83887362: 'AktHomeConsumptionL2',
-            # 83887618: 'AktHomeConsumptionL3',
-            33555202: "dc1Voltage",
-            33555201: "dc1Current",
-            33555458: "dc2Voltage",
-            33555457: "dc2Current",
-            # 33555714: 'dc3Voltage',
-            # 33555713: 'dc3Current',
-            # 83888128: 'ownConsumption',
-        }
 
-        self.nr_of_decimal_for_round["BatCurrentDir"] = 0
         self.average_ignores = [
             "TIMESTAMP",
             "time_sec",
@@ -218,10 +513,15 @@ class Kostal_Piko_BA(Base_Parser):
             "BatStateOfCharge",
         ]
 
+        self.nr_of_decimal_for_round["BatCurrentDir"] = 0
+
         self.last_day = self.timestamp.astimezone(
             tz=pytz.timezone("Europe/Berlin")
         ).date()
-        self.accumulate_file = f"{self.name}_acucmulate.pkl"
+        # self.accumulate_file = f"{self.name}_acucmulate.pkl"
+        logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
+
+        self.accumulate_file = os.path.join(logs_dir, f"{self.name}_acucmulate.pkl")
 
         try:
             with open(self.accumulate_file, "rb") as f_handle:
@@ -238,12 +538,10 @@ class Kostal_Piko_BA(Base_Parser):
                 # '': 0,
                 # '': 0,
             }
-        self.mqtt_client = None
-        self.mqtt_topic = ""
-        self.mqtt_openwb_client = None
-        self.mqtt_openwb_topics = None
+        self.mqtt = None
         try:
-            self.connect_mqtt()
+            self.mqtt = MQTTBase(self.name, self.configuration[self.name].get('mqtt', None), self.suppress_zeros)
+            self.set_averages = self.mqtt.handle_mqtt_averages
         except Exception as e:
             logger.exception("Cannot connect to MQTT")
             raise e
@@ -254,94 +552,6 @@ class Kostal_Piko_BA(Base_Parser):
         self.session_id = None
         self.login_needed = True
 
-    @retry(tries=4, delay=10, backoff=1.5, logger=logger)
-    def connect_mqtt(self):
-        if "MQTT_broker_ip" in self.configuration[self.name]:
-            logger.info("Connecting to MQTT")
-            self.mqtt_topic = self.configuration.get(self.name, "MQTT_topic")
-            self.mqtt_client = mqtt.Client(
-                mqtt.CallbackAPIVersion.VERSION2,
-                client_id=f"{self.name}_logger",
-                clean_session=False,
-                protocol=4,
-            )  # create new instance
-            self.mqtt_client.will_set(
-                f"equipment/{self.name}/connection", "offline", qos=1, retain=True
-            )
-
-            def on_connect(client, userdata, flags, reason_code, properties):
-                logger.info(f"Connecting - setting online status - rc: {reason_code}")
-                client.publish(
-                    f"equipment/{Kostal_Piko_BA.name}/connection",
-                    "online",
-                    qos=1,
-                    retain=True,
-                )
-
-            self.mqtt_client.username_pw_set(
-                self.configuration.get(self.name, "MQTT_user"),
-                self.configuration.get(self.name, "MQTT_PW"),
-            )
-            self.mqtt_client.tls_set("ca.crt")
-            # self.mqtt_client.tls_insecure_set(False)
-            self.mqtt_client.on_connect = on_connect
-            self.mqtt_client.connect(
-                host=self.configuration.get(self.name, "MQTT_broker_ip"),
-                port=self.configuration.getint(self.name, "MQTT_broker_port"),
-            )
-            self.mqtt_client.loop_start()
-            # self.mqtt_client.publish(f"equipment/{self.name}/status", 'online', qos=1, retain=True)
-
-        if "MQTT_openwb_broker_ip" in self.configuration[self.name]:
-            self.mqtt_openwb_topics = {}
-            if "MQTT_openwb_topic_evu" in self.configuration[self.name]:
-                self.mqtt_openwb_topics["evu"] = self.configuration.get(
-                    self.name, "MQTT_openwb_topic_evu"
-                )
-            if "MQTT_openwb_topic_wr" in self.configuration[self.name]:
-                self.mqtt_openwb_topics["wr"] = self.configuration.get(
-                    self.name, "MQTT_openwb_topic_wr"
-                )
-            if "MQTT_openwb_topic_bat" in self.configuration[self.name]:
-                self.mqtt_openwb_topics["bat"] = self.configuration.get(
-                    self.name, "MQTT_openwb_topic_bat"
-                )
-
-            self.mqtt_openwb_client = mqtt.Client(
-                mqtt.CallbackAPIVersion.VERSION2,
-                client_id=f"{self.name}_openWB_logger",
-                clean_session=False,
-                protocol=4,
-            )  # create new instance
-            self.mqtt_openwb_client.will_set(
-                f"equipment/{self.name}_openWB/connection",
-                "offline",
-                qos=1,
-                retain=True,
-            )
-
-            def on_connect_openWB(client, userdata, flags, reason_code, properties):
-                logger.info(f"Connecting - setting online status - rc: {reason_code}")
-                client.publish(
-                    f"equipment/{Kostal_Piko_BA.name}_openWB/connection",
-                    "online",
-                    qos=1,
-                    retain=True,
-                )
-
-            self.mqtt_openwb_client.username_pw_set(
-                self.configuration.get(self.name, "MQTT_openwb_user"),
-                self.configuration.get(self.name, "MQTT_openwb_PW"),
-            )
-            self.mqtt_openwb_client.tls_set("ca.crt")
-            # self.mqtt_client.tls_insecure_set(False)
-            self.mqtt_openwb_client.on_connect = on_connect_openWB
-            self.mqtt_openwb_client.connect(
-                host=self.configuration.get(self.name, "MQTT_openwb_broker_ip"),
-                port=self.configuration.getint(self.name, "MQTT_openwb_broker_port"),
-            )
-            self.mqtt_openwb_client.loop_start()
-            # self.mqtt_client.publish(f"equipment/{self.name}/status", 'online', qos=1, retain=True)
 
     def exit_parser(self):
 
@@ -350,27 +560,6 @@ class Kostal_Piko_BA(Base_Parser):
                 self.accumulated_data, f_handle, protocol=pickle.HIGHEST_PROTOCOL
             )
             logger.info("Saved accumulated data")
-        if self.mqtt_client is not None:
-            try:
-                self.mqtt_client.publish(
-                    f"equipment/{self.name}/connection", "offline", qos=1, retain=True
-                )
-                logger.info('MQTT "offline"-status was set')
-                self.mqtt_client.loop_stop()
-            except Exception:
-                logger.exception('MQTT failed to set "offline"-status')
-        if self.mqtt_openwb_client is not None:
-            try:
-                self.mqtt_openwb_client.publish(
-                    f"equipment/{self.name}_openWB/connection",
-                    "offline",
-                    qos=1,
-                    retain=True,
-                )
-                logger.info('MQTT "offline"-status for openwb was set')
-                self.mqtt_client.loop_stop()
-            except Exception:
-                logger.exception('MQTT failed to set "offline"-status for openwb')
 
     def collect_data(self):
         self.parsed_data = self.load_data_fromurl()
@@ -378,39 +567,31 @@ class Kostal_Piko_BA(Base_Parser):
         self.correct_data()
         self.add_batLadenFrei()
         self.accumulate_data()
-        if self.mqtt_client is not None:
-            self.mqtt_data.update(
-                {
-                    key: value
-                    for key, value in self.parsed_data.items()
-                    if key not in self.suppress_zeros
-                }
+
+
+        if self.parsed_data["dcPowerPV"] < 10:
+            pv_production = 0
+        else:
+            pv_production = (
+                self.parsed_data["BatPowerLaden"]
+                + self.parsed_data["EinspeisenPower"]
+                + self.parsed_data["AktHomeConsumptionSolar"]
             )
-            if self.parsed_data["dcPowerPV"] < 10:
-                pv_production = 0
-            else:
-                pv_production = (
-                    self.parsed_data["BatPowerLaden"]
-                    + self.parsed_data["EinspeisenPower"]
-                    + self.parsed_data["AktHomeConsumptionSolar"]
-                )
-            self.mqtt_data["pv_export_virt"] = pv_production
-            self.mqtt_data.update(self.accumulated_data)
-            self.send_mqtt_data()
-        if self.mqtt_openwb_client is not None:
-            self.send_mqtt_data_openwb()
+        self.mqtt.send_data(self.parsed_data, **self.accumulated_data, pv_export_virt = pv_production)
+        # if self.mqtt_openwb_client is not None:
+        #     self.send_mqtt_data_openwb()
         return self.parsed_data
 
-    def set_averages(self, averaged_data):
-        if self.mqtt_client is not None:
-            self.mqtt_data.update(
-                {
-                    key: value
-                    for key, value in averaged_data.items()
-                    if key in self.suppress_zeros
-                }
-            )
-            self.send_mqtt_data()
+    # def set_averages(self, averaged_data):
+    #     if self.mqtt_client is not None:
+    #         self.mqtt_data.update(
+    #             {
+    #                 key: value
+    #                 for key, value in averaged_data.items()
+    #                 if key in self.suppress_zeros
+    #             }
+    #         )
+    #         self.send_mqtt_data()
 
     def accumulate_data(self):
         today = self.timestamp.astimezone(tz=pytz.timezone("Europe/Berlin")).date()
@@ -457,120 +638,111 @@ class Kostal_Piko_BA(Base_Parser):
                     self.parsed_data["AktHomeConsumptionBat"] * self.refreshrate / 3600
                 )
 
-    def send_mqtt_data_openwb(self):
-        try:
-            if not self.mqtt_openwb_client.is_connected():
-                self.mqtt_openwb_client.reconnect()
-            list_for_send = []
-            extra_data = self.load_data_fromurl(self.dict_dxsID_openWB)
-            for data_type, global_topic in self.mqtt_openwb_topics.items():
-                if data_type == "evu":
-                    list_for_send.append(
-                        (
-                            f"{global_topic}exported",
-                            self.accumulated_data["evu_exported"],
-                        )
-                    )
-                    list_for_send.append(
-                        (
-                            f"{global_topic}imported",
-                            self.accumulated_data["evu_imported"],
-                        )
-                    )
-                    if self.parsed_data["EinspeisenPower"] > 0:
-                        gridPower = -self.parsed_data["EinspeisenPower"]
-                    else:
-                        gridPower = self.parsed_data["AktHomeConsumptionGrid"]
-                    list_for_send.append((f"{global_topic}power", gridPower))
-                    list_for_send.append(
-                        (
-                            f"{global_topic}powers",
-                            str(
-                                [
-                                    extra_data[f"AktHomeConsumptionL{phase+1}"]
-                                    - extra_data[f"GridPowerL{phase+1}"]
-                                    for phase in range(3)
-                                ]
-                            ),
-                        )
-                    )
-                    list_for_send.append(
-                        (f"{global_topic}frequency", self.parsed_data["GridFreq"])
-                    )
-                    list_for_send.append(
-                        (
-                            f"{global_topic}voltages",
-                            str(
-                                [
-                                    self.parsed_data[f"GridVoltageL{phase+1}"]
-                                    for phase in range(3)
-                                ]
-                            ),
-                        )
-                    )
-
-                if data_type == "wr":
-                    list_for_send.append(
-                        (
-                            f"{global_topic}exported",
-                            self.accumulated_data["pv_exported"],
-                        )
-                    )
-
-                if data_type == "bat":
-                    if self.parsed_data["BatCurrentDir"] == 0:
-                        list_for_send.append(
-                            (f"{global_topic}power", self.parsed_data["BatPowerLaden"])
-                        )
-                    else:
-                        if self.parsed_data["dcPowerPV"] < 10:
-                            list_for_send.append(
-                                (
-                                    f"{global_topic}power",
-                                    -self.parsed_data["AktHomeConsumptionBat"]
-                                    - self.parsed_data["EinspeisenPower"],
-                                )
-                            )
-                        else:
-                            list_for_send.append(
-                                (
-                                    f"{global_topic}power",
-                                    -self.parsed_data["AktHomeConsumptionBat"],
-                                )
-                            )
-                    list_for_send.append(
-                        (
-                            f"{global_topic}exported",
-                            self.accumulated_data["bat_exported"],
-                        )
-                    )
-                    list_for_send.append(
-                        (
-                            f"{global_topic}imported",
-                            self.accumulated_data["bat_imported"],
-                        )
-                    )
-
-                    list_for_send.append(
-                        (f"{global_topic}soc", self.parsed_data["BatStateOfCharge"])
-                    )
-                    if self.parsed_data["BatStateOfCharge"] == 0:
-                        return
-            # logger.info(self.accumulated_data)
-            for address, value in list_for_send:
-                self.mqtt_openwb_client.publish(address, value)
-        except Exception:
-            logger.exception("Error Sending date to mqtt_client - no retry")
-
-    def send_mqtt_data(self):
-        try:
-            if not self.mqtt_client.is_connected():
-                self.mqtt_client.reconnect()
-            json_data = json.dumps(self.mqtt_data)
-            self.mqtt_client.publish(self.mqtt_topic, json_data)
-        except Exception:
-            logger.exception("Error Sending date to mqtt_client - no retry")
-
+    # def send_mqtt_data_openwb(self):
+    #     try:
+    #         if not self.mqtt_openwb_client.is_connected():
+    #             self.mqtt_openwb_client.reconnect()
+    #         list_for_send = []
+    #         extra_data = self.load_data_fromurl(self.dict_dxsID_openWB)
+    #         for data_type, global_topic in self.mqtt_openwb_topics.items():
+    #             if data_type == "evu":
+    #                 list_for_send.append(
+    #                     (
+    #                         f"{global_topic}exported",
+    #                         self.accumulated_data["evu_exported"],
+    #                     )
+    #                 )
+    #                 list_for_send.append(
+    #                     (
+    #                         f"{global_topic}imported",
+    #                         self.accumulated_data["evu_imported"],
+    #                     )
+    #                 )
+    #                 if self.parsed_data["EinspeisenPower"] > 0:
+    #                     gridPower = -self.parsed_data["EinspeisenPower"]
+    #                 else:
+    #                     gridPower = self.parsed_data["AktHomeConsumptionGrid"]
+    #                 list_for_send.append((f"{global_topic}power", gridPower))
+    #                 list_for_send.append(
+    #                     (
+    #                         f"{global_topic}powers",
+    #                         str(
+    #                             [
+    #                                 extra_data[f"AktHomeConsumptionL{phase+1}"]
+    #                                 - extra_data[f"GridPowerL{phase+1}"]
+    #                                 for phase in range(3)
+    #                             ]
+    #                         ),
+    #                     )
+    #                 )
+    #                 list_for_send.append(
+    #                     (f"{global_topic}frequency", self.parsed_data["GridFreq"])
+    #                 )
+    #                 list_for_send.append(
+    #                     (
+    #                         f"{global_topic}voltages",
+    #                         str(
+    #                             [
+    #                                 self.parsed_data[f"GridVoltageL{phase+1}"]
+    #                                 for phase in range(3)
+    #                             ]
+    #                         ),
+    #                     )
+    #                 )
+    # 
+    #             if data_type == "wr":
+    #                 list_for_send.append(
+    #                     (
+    #                         f"{global_topic}exported",
+    #                         self.accumulated_data["pv_exported"],
+    #                     )
+    #                 )
+    # 
+    #             if data_type == "bat":
+    #                 if self.parsed_data["BatCurrentDir"] == 0:
+    #                     list_for_send.append(
+    #                         (f"{global_topic}power", self.parsed_data["BatPowerLaden"])
+    #                     )
+    #                 else:
+    #                     if self.parsed_data["dcPowerPV"] < 10:
+    #                         list_for_send.append(
+    #                             (
+    #                                 f"{global_topic}power",
+    #                                 -self.parsed_data["AktHomeConsumptionBat"]
+    #                                 - self.parsed_data["EinspeisenPower"],
+    #                             )
+    #                         )
+    #                     else:
+    #                         list_for_send.append(
+    #                             (
+    #                                 f"{global_topic}power",
+    #                                 -self.parsed_data["AktHomeConsumptionBat"],
+    #                             )
+    #                         )
+    #                 list_for_send.append(
+    #                     (
+    #                         f"{global_topic}exported",
+    #                         self.accumulated_data["bat_exported"],
+    #                     )
+    #                 )
+    #                 list_for_send.append(
+    #                     (
+    #                         f"{global_topic}imported",
+    #                         self.accumulated_data["bat_imported"],
+    #                     )
+    #                 )
+    # 
+    #                 list_for_send.append(
+    #                     (f"{global_topic}soc", self.parsed_data["BatStateOfCharge"])
+    #                 )
+    #                 if self.parsed_data["BatStateOfCharge"] == 0:
+    #                     return
+    #         # logger.info(self.accumulated_data)
+    #         for address, value in list_for_send:
+    #             self.mqtt_openwb_client.publish(address, value)
+    #     except Exception:
+    #         logger.exception("Error Sending date to mqtt_client - no retry")
+    # 
     @staticmethod
     def reformat_data(input_dict, dictionary):
         # output = {}
@@ -646,6 +818,9 @@ class Kostal_Piko_BA(Base_Parser):
             )
         else:
             self.parsed_data["BatPowerEntLaden"] = 0
+        self.parsed_data["BatCurrent"] = (
+            self.parsed_data["BatCurrentDir"] * 2 - 1
+        ) * self.parsed_data["BatCurrent"]
 
     def correct_data(self):
         if self.parsed_data["acPower"] <= 0.001:
@@ -653,21 +828,21 @@ class Kostal_Piko_BA(Base_Parser):
             self.parsed_data["AktHomeConsumptionBat"] = (
                 0  # Vermutlich nicht nötig, da noch nicht gesehen...
             )
-            self.parsed_data["AktHomeConsumption"] = self.parsed_data[
-                "AktHomeConsumptionGrid"
-            ]
+            # self.parsed_data["AktHomeConsumption"] = self.parsed_data[
+            #     "AktHomeConsumptionGrid"
+            # ]
         elif self.parsed_data["dcPowerPV"] < 10:
             self.parsed_data["AktHomeConsumptionSolar"] = 0
-            self.parsed_data["AktHomeConsumption"] = (
-                self.parsed_data["AktHomeConsumptionGrid"]
-                + self.parsed_data["AktHomeConsumptionBat"]
-            )
+            # self.parsed_data["AktHomeConsumption"] = (
+            #     self.parsed_data["AktHomeConsumptionGrid"]
+            #     + self.parsed_data["AktHomeConsumptionBat"]
+            # )
 
         # manchmal ist AktHomeConsumptionSolar negativ...wird hier korrigiert
         if (
             self.parsed_data["AktHomeConsumptionSolar"] < 0
             or self.parsed_data["AktHomeConsumptionBat"] < 0
-            or self.parsed_data["AktHomeConsumption"] < 0
+            # or self.parsed_data["AktHomeConsumption"] < 0
             or self.parsed_data["AktHomeConsumptionGrid"] < 0
         ):
             if self.parsed_data["AktHomeConsumptionSolar"] < 0:
@@ -680,11 +855,11 @@ class Kostal_Piko_BA(Base_Parser):
                 logger.info("AktHomeConsumptionGrid is negative")
                 self.parsed_data["AktHomeConsumptionGrid"] = 0
 
-            self.parsed_data["AktHomeConsumption"] = (
-                self.parsed_data["AktHomeConsumptionSolar"]
-                + self.parsed_data["AktHomeConsumptionBat"]
-                + self.parsed_data["AktHomeConsumptionGrid"]
-            )
+            # self.parsed_data["AktHomeConsumption"] = (
+            #     self.parsed_data["AktHomeConsumptionSolar"]
+            #     + self.parsed_data["AktHomeConsumptionBat"]
+            #     + self.parsed_data["AktHomeConsumptionGrid"]
+            # )
 
         # Correction of loading battery by grid (Ausgleichsladung)
         if (
@@ -694,13 +869,13 @@ class Kostal_Piko_BA(Base_Parser):
             and self.parsed_data["dcPowerPV"] < 10
         ):
             logger.info(
-                "Bat is loaded by Grid - assigning loading to AktHomeConsumptionGrid/AktHomeConsumption"
+                "Bat is loaded by Grid - assigning loading to AktHomeConsumptionGrid"
             )
-            self.parsed_data["AktHomeConsumptionGrid"] += self.parsed_data[
+            self.parsed_data["AktHomeConsumptionGrid"] += 1.1 * self.parsed_data[
                 "BatPowerLaden"
             ]
 
-            self.parsed_data["AktHomeConsumption"] += self.parsed_data["BatPowerLaden"]
+            # self.parsed_data["AktHomeConsumption"] += self.parsed_data["BatPowerLaden"]
 
         if self.parsed_data["acPower"] > 0.001:
             self.parsed_data["EinspeisenPower"] = (
