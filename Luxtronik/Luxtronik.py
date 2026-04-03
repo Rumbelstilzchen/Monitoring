@@ -144,10 +144,8 @@ class Luxtronik(Base_Parser):
 
 def manual_read_and_print_data():
     parser = Luxtronik
-    import configparser
-    configuration = configparser.ConfigParser()
-    configuration.sections()
-    configuration.read(r'..\config.ini')
+    from base_classes.config import ConfigDict,load_config
+    configuration = ConfigDict(load_config())
 
     parser_init = parser(configuration)
 
