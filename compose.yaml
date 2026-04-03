@@ -1,0 +1,172 @@
+services:
+  influxdb2:
+    image: influxdb:2
+    container_name: moniotring_influxdb
+    ports:
+      - 8086:8086
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME_FILE: /run/secrets/influxdb2-admin-username
+      DOCKER_INFLUXDB_INIT_PASSWORD_FILE: /run/secrets/influxdb2-admin-password
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE: /run/secrets/influxdb2-admin-token
+      DOCKER_INFLUXDB_INIT_ORG: private
+      DOCKER_INFLUXDB_INIT_BUCKET: kostal_monitoring
+      TZ: Europe/Berlin
+    secrets:
+      - influxdb2-admin-username
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+    volumes:
+      - ./influxdb2/data:/var/lib/influxdb2
+      - ./influxdb2/config:/etc/influxdb2
+    networks:
+      - smart_home
+
+  kostal-monitoring:
+    build:
+      context: ./energy_monitoring/kostal/
+      dockerfile: Dockerfile
+    image: moniotring_smh:latest
+    container_name: monitoring_kostal
+    command: ["python", "monitoring_template.py", "Kostal_Piko_BA"]
+    depends_on:
+      - influxdb2
+    environment:
+      - TZ=Europe/Berlin
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./energy_monitoring/kostal/config_docker:/app/config:ro
+      - ./energy_monitoring/kostal/logs_docker:/app/logs
+    restart: unless-stopped
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Optional: Healthcheck
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/logs/logfile_Kostal_Piko_BA.log"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    networks:
+      - smart_home
+
+  GoE-PV_surplus:
+    build:
+      context: ./car_pv_charging/go-e/
+      dockerfile: Dockerfile
+    image: goe-pv_surplus:latest
+    container_name: GoE-PV_surplus
+    environment:
+      - TZ=Europe/Berlin
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./car_pv_charging/go-e/config_docker:/app/config:ro
+      - ./car_pv_charging/go-e/logs_docker:/app/logs
+    restart: unless-stopped
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Optional: Healthcheck
+#    healthcheck:
+#      test: [ "CMD", "test", "-f", "/app/logs/logfile_Kostal_Piko_BA.log" ]
+#      interval: 60s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 30s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    networks:
+      - smart_home
+      
+  elgris-monitoring:
+    image: moniotring_smh:latest
+    container_name: monitoring_elgris
+    command: ["python", "monitoring_template.py", "Elgris"]
+    depends_on:
+      - influxdb2
+    environment:
+      - TZ=Europe/Berlin
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./energy_monitoring/kostal/config_docker:/app/config:ro
+      - ./energy_monitoring/kostal/logs_docker:/app/logs
+    restart: unless-stopped
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Optional: Healthcheck
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/logs/logfile_Elgris.log"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    networks:
+      - smart_home
+
+  goe-monitoring:
+    image: moniotring_smh:latest
+    container_name: monitoring_goe
+    command: ["python", "monitoring_template.py", "GoE_Garage"]
+    depends_on:
+      - influxdb2
+    environment:
+      - TZ=Europe/Berlin
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./energy_monitoring/kostal/config_docker:/app/config:ro
+      - ./energy_monitoring/kostal/logs_docker:/app/logs
+    restart: unless-stopped
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Optional: Healthcheck
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/logs/logfile_GoE_Garage.log"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    networks:
+      - smart_home
+
+secrets:
+  influxdb2-admin-username:
+    file: ./.env.influxdb2-admin-username
+  influxdb2-admin-password:
+    file: ./.env.influxdb2-admin-password
+  influxdb2-admin-token:
+    file: ./.env.influxdb2-admin-token
+    
+  
+networks:
+  smart_home:
+    name: smart_home
+    external: true
+#  smh_monitor:
+#    name: smh_monitor
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: 172.34.0.0/24
+#          gateway: 172.34.0.1

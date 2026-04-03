@@ -1,0 +1,62 @@
+# Docker Build Ignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+LICENSE
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+compose.yaml
+
+# Logs (werden im Container neu erstellt)
+*.log
+logs/
+
+# Pickle files (state files)
+*.pkl
+*.pickle
+
+# Grafana exports
+00_grafana/
+
+# OS files
+Thumbs.db
+.DS_Store
+*.tmp
+
+# Development files
+*.orig
+*.bak
+

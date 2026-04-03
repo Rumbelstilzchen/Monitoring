@@ -1,7 +1,10 @@
-/venv*/
-/.idea/
-/logfile_*.log
-/config.ini
-/DWD_SIM/own_moduls.csv
-/DWD_SIM/own_inverters.csv
-/ca.crt
+.idea
+logs/*.log
+logs/*.pkl
+logs_docker/*.log
+logs_docker/*.pkl
+
+config/config.yaml
+config/*.crt
+config_docker/config.yaml
+config_docker/*.crt
