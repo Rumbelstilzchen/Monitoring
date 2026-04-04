@@ -15,7 +15,7 @@ if len(sys.argv) <= 1:
 
 module_name = sys.argv[1]
 parser = getattr(
-    importlib.import_module("%s.%s" % (module_name, module_name)), module_name
+    importlib.import_module(f"devices_to_monitor.{module_name}"), module_name
 )
 # parser = getattr(__import__("%s.%s" % (module_name,module_name), fromlist=[module_name]), module_name)
 

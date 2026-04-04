@@ -20,14 +20,14 @@ from base_classes.monitoring import Monitoring as Monitoring_class
 # parser = getattr(__import__("%s.%s" % (module_name,module_name), fromlist=[module_name]), module_name)
 
 # For debugging purposes any of the lines below does the same thing but static
-# from Kostal_Piko_BA.Kostal_Piko_BA import Kostal_Piko_BA as parser
-#from Elgris.Elgris import Elgris as parser
-from GoE_Garage.GoE_Garage import GoE_Garage as parser
-
-# from DWD.DWD import DWD as parser
-# from DWD_SIM.DWD_SIM import DWD_SIM as parser
-
-# from USV.USV import USV as parser
+# from devices_to_monitor.Kostal_Piko_BA import Kostal_Piko_BA as parser
+# from devices_to_monitor.Elgris import Elgris as parser
+# from devices_to_monitor.GoE_Garage import GoE_Garage as parser
+# from devices_to_monitor.BYD import BYD as parser
+# from devices_to_monitor.BYD_Cell_voltage import BYD_Cell_voltage as parser
+# from devices_to_monitor.DWD_SIM import DWD_SIM as parser
+# from devices_to_monitor.USV import USV as parser
+from devices_to_monitor.Luxtronik import Luxtronik as parser
 
 
 def main():
