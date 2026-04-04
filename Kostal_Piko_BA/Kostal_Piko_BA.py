@@ -825,9 +825,8 @@ class Kostal_Piko_BA(Base_Parser):
     def correct_data(self):
         if self.parsed_data["acPower"] <= 0.001:
             self.parsed_data["AktHomeConsumptionSolar"] = 0
-            self.parsed_data["AktHomeConsumptionBat"] = (
-                0  # Vermutlich nicht nötig, da noch nicht gesehen...
-            )
+            # Vermutlich nicht nötig, da noch nicht gesehen...
+            self.parsed_data["AktHomeConsumptionBat"] = 0
             # self.parsed_data["AktHomeConsumption"] = self.parsed_data[
             #     "AktHomeConsumptionGrid"
             # ]
@@ -839,27 +838,16 @@ class Kostal_Piko_BA(Base_Parser):
             # )
 
         # manchmal ist AktHomeConsumptionSolar negativ...wird hier korrigiert
-        if (
-            self.parsed_data["AktHomeConsumptionSolar"] < 0
-            or self.parsed_data["AktHomeConsumptionBat"] < 0
-            # or self.parsed_data["AktHomeConsumption"] < 0
-            or self.parsed_data["AktHomeConsumptionGrid"] < 0
-        ):
-            if self.parsed_data["AktHomeConsumptionSolar"] < 0:
-                logger.info("AktHomeConsumptionSolar is negative")
-                self.parsed_data["AktHomeConsumptionSolar"] = 0
-            if self.parsed_data["AktHomeConsumptionBat"] < 0:
-                logger.info("AktHomeConsumptionBat is negative")
-                self.parsed_data["AktHomeConsumptionBat"] = 0
-            if self.parsed_data["AktHomeConsumptionGrid"] < 0:
-                logger.info("AktHomeConsumptionGrid is negative")
-                self.parsed_data["AktHomeConsumptionGrid"] = 0
 
-            # self.parsed_data["AktHomeConsumption"] = (
-            #     self.parsed_data["AktHomeConsumptionSolar"]
-            #     + self.parsed_data["AktHomeConsumptionBat"]
-            #     + self.parsed_data["AktHomeConsumptionGrid"]
-            # )
+        if self.parsed_data["AktHomeConsumptionSolar"] < 0:
+            logger.info("AktHomeConsumptionSolar is negative")
+            self.parsed_data["AktHomeConsumptionSolar"] = 0
+        if self.parsed_data["AktHomeConsumptionBat"] < 0:
+            logger.info("AktHomeConsumptionBat is negative")
+            self.parsed_data["AktHomeConsumptionBat"] = 0
+        if self.parsed_data["AktHomeConsumptionGrid"] < 0:
+            logger.info("AktHomeConsumptionGrid is negative")
+            self.parsed_data["AktHomeConsumptionGrid"] = 0
 
         # Correction of loading battery by grid (Ausgleichsladung)
         if (
@@ -877,6 +865,14 @@ class Kostal_Piko_BA(Base_Parser):
 
             # self.parsed_data["AktHomeConsumption"] += self.parsed_data["BatPowerLaden"]
 
+        # after all corrections are applied total home Consumption is calculated
+        self.parsed_data["AktHomeConsumption"] = (
+            self.parsed_data["AktHomeConsumptionSolar"]
+            + self.parsed_data["AktHomeConsumptionBat"]
+            + self.parsed_data["AktHomeConsumptionGrid"]
+        )
+
+
         if self.parsed_data["acPower"] > 0.001:
             self.parsed_data["EinspeisenPower"] = (
                 self.parsed_data["acPower"]
@@ -887,6 +883,9 @@ class Kostal_Piko_BA(Base_Parser):
             self.parsed_data["EinspeisenPower"] = 0
 
         if self.parsed_data["EinspeisenPower"] < 0:
+            logger.info(
+                "AC output of inverter is lower than HomeConsumption of Bat + PV"
+            )
             self.parsed_data["EinspeisenPower"] = 0
 
     def add_batLadenFrei(self):
