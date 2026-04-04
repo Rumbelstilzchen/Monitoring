@@ -1,0 +1,4 @@
+config/
+config_docker/
+logs/
+logs_docker/

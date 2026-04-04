@@ -1,10 +1,14 @@
 .idea
-logs/*.log
-logs/*.pkl
-logs_docker/*.log
-logs_docker/*.pkl
+log_devices/logs/*.log
+log_devices/logs/*.pkl
+log_devices/logs_docker/*.log
+log_devices/logs_docker/*.pkl
 
-config/config.yaml
-config/*.crt
-config_docker/config.yaml
-config_docker/*.crt
+log_devices/config/config.yaml
+log_devices/config/own_inverters.csv
+log_devices/config/own_moduls.csv
+log_devices/config/*.crt
+log_devices/config_docker/config.yaml
+log_devices/config_docker/own_inverters.csv
+log_devices/config_docker/own_moduls.csv
+log_devices/config_docker/*.crt

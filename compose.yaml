@@ -24,7 +24,7 @@ services:
 
   kostal-monitoring:
     build:
-      context: ./energy_monitoring/kostal/
+      context: ./log_devices/
       dockerfile: Dockerfile
     image: moniotring_smh:latest
     container_name: monitoring_kostal

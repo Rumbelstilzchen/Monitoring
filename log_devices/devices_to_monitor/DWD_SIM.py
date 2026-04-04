@@ -364,20 +364,24 @@ class SIM:
         if self.module in pvlib.pvsystem.retrieve_sam("cecmod").keys():
             self.sandia_module = pvlib.pvsystem.retrieve_sam("cecmod")[self.module]
         else:
-            filename = os.path.dirname(os.path.abspath(__file__))
-            filename = os.path.join(filename, "own_moduls.csv")
-            self.sandia_module = pvlib.pvsystem.retrieve_sam(path=filename)[self.module]
+            if "own_moduls_file" in self.config:
+                filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", self.config["own_moduls_file"])
+                self.sandia_module = pvlib.pvsystem.retrieve_sam(path=filename)[self.module]
+            else:
+                raise ValueError(f"Module {self.module} not found in pvlib cecmod and no own_moduls_file provided in config")
 
         if self.inverter in pvlib.pvsystem.retrieve_sam("cecinverter").keys():
             self.cec_inverter = pvlib.pvsystem.retrieve_sam("cecinverter")[
                 self.inverter
             ]
         else:
-            filename = os.path.dirname(os.path.abspath(__file__))
-            filename = os.path.join(filename, "own_inverters.csv")
-            self.cec_inverter = pvlib.pvsystem.retrieve_sam(path=filename)[
-                self.inverter
-            ]
+            if "own_inverter_file" in self.config:
+                filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config",
+                                        self.config["own_inverter_file"])
+                self.cec_inverter = pvlib.pvsystem.retrieve_sam(path=filename)[self.inverter]
+            else:
+                raise ValueError(f"Inverter {self.inverter} not found in pvlib cecinverter and no own_inverter_file provided in config")
+
 
         self.pvliblocation = Location(
             latitude=self.latitude,
